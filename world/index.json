@@ -1,0 +1,1904 @@
+{
+ "materials": [
+  "SmoothPlastic",
+  "Plastic",
+  "Asphalt",
+  "Pavement",
+  "Concrete",
+  "Brick",
+  "Limestone",
+  "Sandstone",
+  "Slate",
+  "Granite",
+  "Marble",
+  "Cobblestone",
+  "Glass",
+  "Metal",
+  "DiamondPlate",
+  "CorrodedMetal",
+  "Wood",
+  "WoodPlanks",
+  "Grass",
+  "LeafyGrass",
+  "Neon",
+  "Fabric",
+  "Plaster",
+  "Rock",
+  "Basalt",
+  "Ground",
+  "Foil",
+  "Rubber",
+  "Pebble"
+ ],
+ "tags": [
+  "",
+  "GeoBloxWindow",
+  "GeoBloxShopfront",
+  "GeoBloxLantern",
+  "GeoBloxBeacon",
+  "GeoBloxSignalRed",
+  "GeoBloxSignalAmber",
+  "GeoBloxSignalGreen",
+  "GeoBloxDialGlow",
+  "GeoBloxHourHand",
+  "GeoBloxMinuteHand",
+  "GeoBloxEyeWheel",
+  "GeoBloxEyeCapsule"
+ ],
+ "chunks": [
+  {
+   "name": "c-4_12",
+   "parts": 9,
+   "models": 1,
+   "bytes": 471
+  },
+  {
+   "name": "c-3_00",
+   "parts": 15,
+   "models": 1,
+   "bytes": 618
+  },
+  {
+   "name": "c-3_01",
+   "parts": 6,
+   "models": 1,
+   "bytes": 363
+  },
+  {
+   "name": "c-3_04",
+   "parts": 10,
+   "models": 1,
+   "bytes": 507
+  },
+  {
+   "name": "c-3_12",
+   "parts": 12,
+   "models": 1,
+   "bytes": 530
+  },
+  {
+   "name": "c-3_13",
+   "parts": 4,
+   "models": 1,
+   "bytes": 292
+  },
+  {
+   "name": "c-2_-3",
+   "parts": 9,
+   "models": 1,
+   "bytes": 450
+  },
+  {
+   "name": "c-2_-2",
+   "parts": 1,
+   "models": 1,
+   "bytes": 196
+  },
+  {
+   "name": "c-2_-1",
+   "parts": 27,
+   "models": 1,
+   "bytes": 1027
+  },
+  {
+   "name": "c-2_00",
+   "parts": 31,
+   "models": 1,
+   "bytes": 1054
+  },
+  {
+   "name": "c-2_01",
+   "parts": 17,
+   "models": 1,
+   "bytes": 660
+  },
+  {
+   "name": "c-2_02",
+   "parts": 9,
+   "models": 1,
+   "bytes": 457
+  },
+  {
+   "name": "c-2_03",
+   "parts": 45,
+   "models": 1,
+   "bytes": 1563
+  },
+  {
+   "name": "c-2_04",
+   "parts": 11,
+   "models": 1,
+   "bytes": 450
+  },
+  {
+   "name": "c-2_05",
+   "parts": 4,
+   "models": 1,
+   "bytes": 292
+  },
+  {
+   "name": "c-2_07",
+   "parts": 16,
+   "models": 1,
+   "bytes": 624
+  },
+  {
+   "name": "c-2_08",
+   "parts": 7,
+   "models": 1,
+   "bytes": 379
+  },
+  {
+   "name": "c-2_09",
+   "parts": 8,
+   "models": 1,
+   "bytes": 422
+  },
+  {
+   "name": "c-2_10",
+   "parts": 367,
+   "models": 1,
+   "bytes": 9053
+  },
+  {
+   "name": "c-2_11",
+   "parts": 3,
+   "models": 1,
+   "bytes": 265
+  },
+  {
+   "name": "c-2_13",
+   "parts": 15,
+   "models": 1,
+   "bytes": 626
+  },
+  {
+   "name": "c-2_14",
+   "parts": 21,
+   "models": 1,
+   "bytes": 815
+  },
+  {
+   "name": "c-2_15",
+   "parts": 60,
+   "models": 1,
+   "bytes": 1975
+  },
+  {
+   "name": "c-1_-2",
+   "parts": 58,
+   "models": 1,
+   "bytes": 1844
+  },
+  {
+   "name": "c-1_-1",
+   "parts": 137,
+   "models": 1,
+   "bytes": 4282
+  },
+  {
+   "name": "c-1_00",
+   "parts": 72,
+   "models": 1,
+   "bytes": 2336
+  },
+  {
+   "name": "c-1_01",
+   "parts": 66,
+   "models": 1,
+   "bytes": 1973
+  },
+  {
+   "name": "c-1_02",
+   "parts": 80,
+   "models": 1,
+   "bytes": 2526
+  },
+  {
+   "name": "c-1_03",
+   "parts": 95,
+   "models": 1,
+   "bytes": 2984
+  },
+  {
+   "name": "c-1_05",
+   "parts": 10,
+   "models": 1,
+   "bytes": 460
+  },
+  {
+   "name": "c-1_08",
+   "parts": 308,
+   "models": 1,
+   "bytes": 8056
+  },
+  {
+   "name": "c-1_09",
+   "parts": 16,
+   "models": 1,
+   "bytes": 650
+  },
+  {
+   "name": "c-1_10",
+   "parts": 28,
+   "models": 1,
+   "bytes": 955
+  },
+  {
+   "name": "c-1_11",
+   "parts": 23,
+   "models": 1,
+   "bytes": 883
+  },
+  {
+   "name": "c-1_12",
+   "parts": 2,
+   "models": 1,
+   "bytes": 232
+  },
+  {
+   "name": "c-1_13",
+   "parts": 42,
+   "models": 1,
+   "bytes": 1448
+  },
+  {
+   "name": "c-1_14",
+   "parts": 63,
+   "models": 1,
+   "bytes": 1981
+  },
+  {
+   "name": "c-1_15",
+   "parts": 192,
+   "models": 1,
+   "bytes": 5425
+  },
+  {
+   "name": "c00_-1",
+   "parts": 135,
+   "models": 1,
+   "bytes": 3626
+  },
+  {
+   "name": "c00_00",
+   "parts": 1482,
+   "models": 7,
+   "bytes": 24002
+  },
+  {
+   "name": "c00_01",
+   "parts": 3497,
+   "models": 10,
+   "bytes": 50699
+  },
+  {
+   "name": "c00_02",
+   "parts": 1496,
+   "models": 8,
+   "bytes": 17969
+  },
+  {
+   "name": "c00_03",
+   "parts": 3515,
+   "models": 9,
+   "bytes": 42157
+  },
+  {
+   "name": "c00_04",
+   "parts": 2201,
+   "models": 5,
+   "bytes": 27928
+  },
+  {
+   "name": "c00_05",
+   "parts": 36,
+   "models": 3,
+   "bytes": 2648
+  },
+  {
+   "name": "c00_06",
+   "parts": 0,
+   "models": 2,
+   "bytes": 1138
+  },
+  {
+   "name": "c00_07",
+   "parts": 198,
+   "models": 5,
+   "bytes": 4907
+  },
+  {
+   "name": "c00_08",
+   "parts": 12,
+   "models": 3,
+   "bytes": 1464
+  },
+  {
+   "name": "c00_09",
+   "parts": 58,
+   "models": 4,
+   "bytes": 2639
+  },
+  {
+   "name": "c00_10",
+   "parts": 631,
+   "models": 8,
+   "bytes": 10445
+  },
+  {
+   "name": "c00_11",
+   "parts": 1537,
+   "models": 10,
+   "bytes": 24924
+  },
+  {
+   "name": "c00_12",
+   "parts": 309,
+   "models": 7,
+   "bytes": 7303
+  },
+  {
+   "name": "c00_13",
+   "parts": 2316,
+   "models": 10,
+   "bytes": 31556
+  },
+  {
+   "name": "c00_14",
+   "parts": 1280,
+   "models": 9,
+   "bytes": 21798
+  },
+  {
+   "name": "c00_15",
+   "parts": 566,
+   "models": 1,
+   "bytes": 15682
+  },
+  {
+   "name": "c00_16",
+   "parts": 22,
+   "models": 1,
+   "bytes": 851
+  },
+  {
+   "name": "c01_-2",
+   "parts": 18,
+   "models": 1,
+   "bytes": 719
+  },
+  {
+   "name": "c01_-1",
+   "parts": 13,
+   "models": 1,
+   "bytes": 582
+  },
+  {
+   "name": "c01_00",
+   "parts": 1679,
+   "models": 18,
+   "bytes": 28812
+  },
+  {
+   "name": "c01_01",
+   "parts": 2090,
+   "models": 29,
+   "bytes": 36102
+  },
+  {
+   "name": "c01_02",
+   "parts": 2521,
+   "models": 9,
+   "bytes": 28551
+  },
+  {
+   "name": "c01_03",
+   "parts": 2089,
+   "models": 12,
+   "bytes": 31113
+  },
+  {
+   "name": "c01_04",
+   "parts": 2198,
+   "models": 22,
+   "bytes": 35878
+  },
+  {
+   "name": "c01_05",
+   "parts": 732,
+   "models": 12,
+   "bytes": 15341
+  },
+  {
+   "name": "c01_06",
+   "parts": 0,
+   "models": 1,
+   "bytes": 1369
+  },
+  {
+   "name": "c01_07",
+   "parts": 0,
+   "models": 2,
+   "bytes": 521
+  },
+  {
+   "name": "c01_08",
+   "parts": 0,
+   "models": 2,
+   "bytes": 862
+  },
+  {
+   "name": "c01_09",
+   "parts": 39,
+   "models": 3,
+   "bytes": 2631
+  },
+  {
+   "name": "c01_10",
+   "parts": 102,
+   "models": 3,
+   "bytes": 3791
+  },
+  {
+   "name": "c01_11",
+   "parts": 1678,
+   "models": 6,
+   "bytes": 25584
+  },
+  {
+   "name": "c01_12",
+   "parts": 2196,
+   "models": 17,
+   "bytes": 32482
+  },
+  {
+   "name": "c01_13",
+   "parts": 1201,
+   "models": 11,
+   "bytes": 18805
+  },
+  {
+   "name": "c01_14",
+   "parts": 2643,
+   "models": 7,
+   "bytes": 38623
+  },
+  {
+   "name": "c01_15",
+   "parts": 193,
+   "models": 1,
+   "bytes": 5433
+  },
+  {
+   "name": "c01_16",
+   "parts": 7,
+   "models": 1,
+   "bytes": 384
+  },
+  {
+   "name": "c02_-2",
+   "parts": 75,
+   "models": 1,
+   "bytes": 2391
+  },
+  {
+   "name": "c02_-1",
+   "parts": 43,
+   "models": 1,
+   "bytes": 1435
+  },
+  {
+   "name": "c02_00",
+   "parts": 1110,
+   "models": 11,
+   "bytes": 20725
+  },
+  {
+   "name": "c02_01",
+   "parts": 1579,
+   "models": 16,
+   "bytes": 25483
+  },
+  {
+   "name": "c02_02",
+   "parts": 1758,
+   "models": 7,
+   "bytes": 21979
+  },
+  {
+   "name": "c02_03",
+   "parts": 3240,
+   "models": 12,
+   "bytes": 41158
+  },
+  {
+   "name": "c02_04",
+   "parts": 1891,
+   "models": 16,
+   "bytes": 29250
+  },
+  {
+   "name": "c02_05",
+   "parts": 1404,
+   "models": 19,
+   "bytes": 24091
+  },
+  {
+   "name": "c02_06",
+   "parts": 0,
+   "models": 2,
+   "bytes": 1183
+  },
+  {
+   "name": "c02_07",
+   "parts": 0,
+   "models": 1,
+   "bytes": 445
+  },
+  {
+   "name": "c02_08",
+   "parts": 148,
+   "models": 3,
+   "bytes": 4142
+  },
+  {
+   "name": "c02_09",
+   "parts": 0,
+   "models": 2,
+   "bytes": 1176
+  },
+  {
+   "name": "c02_10",
+   "parts": 667,
+   "models": 4,
+   "bytes": 11597
+  },
+  {
+   "name": "c02_11",
+   "parts": 187,
+   "models": 5,
+   "bytes": 5613
+  },
+  {
+   "name": "c02_12",
+   "parts": 1247,
+   "models": 6,
+   "bytes": 22866
+  },
+  {
+   "name": "c02_13",
+   "parts": 2008,
+   "models": 12,
+   "bytes": 30289
+  },
+  {
+   "name": "c02_14",
+   "parts": 1797,
+   "models": 25,
+   "bytes": 32729
+  },
+  {
+   "name": "c02_15",
+   "parts": 63,
+   "models": 1,
+   "bytes": 1983
+  },
+  {
+   "name": "c02_16",
+   "parts": 98,
+   "models": 1,
+   "bytes": 2748
+  },
+  {
+   "name": "c03_-2",
+   "parts": 28,
+   "models": 1,
+   "bytes": 1019
+  },
+  {
+   "name": "c03_-1",
+   "parts": 26,
+   "models": 1,
+   "bytes": 932
+  },
+  {
+   "name": "c03_00",
+   "parts": 1200,
+   "models": 8,
+   "bytes": 18030
+  },
+  {
+   "name": "c03_01",
+   "parts": 1639,
+   "models": 14,
+   "bytes": 28224
+  },
+  {
+   "name": "c03_02",
+   "parts": 554,
+   "models": 6,
+   "bytes": 12029
+  },
+  {
+   "name": "c03_03",
+   "parts": 1672,
+   "models": 5,
+   "bytes": 17860
+  },
+  {
+   "name": "c03_04",
+   "parts": 1034,
+   "models": 6,
+   "bytes": 17025
+  },
+  {
+   "name": "c03_05",
+   "parts": 1948,
+   "models": 30,
+   "bytes": 30780
+  },
+  {
+   "name": "c03_06",
+   "parts": 122,
+   "models": 5,
+   "bytes": 4268
+  },
+  {
+   "name": "c03_07",
+   "parts": 74,
+   "models": 2,
+   "bytes": 1938
+  },
+  {
+   "name": "c03_08",
+   "parts": 126,
+   "models": 5,
+   "bytes": 2891
+  },
+  {
+   "name": "c03_09",
+   "parts": 213,
+   "models": 8,
+   "bytes": 5179
+  },
+  {
+   "name": "c03_10",
+   "parts": 194,
+   "models": 6,
+   "bytes": 6509
+  },
+  {
+   "name": "c03_11",
+   "parts": 1357,
+   "models": 4,
+   "bytes": 18571
+  },
+  {
+   "name": "c03_12",
+   "parts": 1255,
+   "models": 9,
+   "bytes": 22079
+  },
+  {
+   "name": "c03_13",
+   "parts": 2475,
+   "models": 11,
+   "bytes": 36241
+  },
+  {
+   "name": "c03_14",
+   "parts": 2239,
+   "models": 22,
+   "bytes": 35939
+  },
+  {
+   "name": "c03_15",
+   "parts": 21,
+   "models": 1,
+   "bytes": 857
+  },
+  {
+   "name": "c04_-2",
+   "parts": 104,
+   "models": 1,
+   "bytes": 2535
+  },
+  {
+   "name": "c04_-1",
+   "parts": 43,
+   "models": 1,
+   "bytes": 1397
+  },
+  {
+   "name": "c04_00",
+   "parts": 3448,
+   "models": 11,
+   "bytes": 52119
+  },
+  {
+   "name": "c04_01",
+   "parts": 1766,
+   "models": 15,
+   "bytes": 31819
+  },
+  {
+   "name": "c04_02",
+   "parts": 2273,
+   "models": 11,
+   "bytes": 38994
+  },
+  {
+   "name": "c04_03",
+   "parts": 1647,
+   "models": 16,
+   "bytes": 32591
+  },
+  {
+   "name": "c04_04",
+   "parts": 546,
+   "models": 6,
+   "bytes": 14307
+  },
+  {
+   "name": "c04_05",
+   "parts": 1634,
+   "models": 10,
+   "bytes": 26736
+  },
+  {
+   "name": "c04_06",
+   "parts": 2802,
+   "models": 8,
+   "bytes": 41131
+  },
+  {
+   "name": "c04_07",
+   "parts": 1242,
+   "models": 5,
+   "bytes": 16586
+  },
+  {
+   "name": "c04_08",
+   "parts": 89,
+   "models": 3,
+   "bytes": 3729
+  },
+  {
+   "name": "c04_09",
+   "parts": 55,
+   "models": 4,
+   "bytes": 3020
+  },
+  {
+   "name": "c04_10",
+   "parts": 553,
+   "models": 5,
+   "bytes": 10354
+  },
+  {
+   "name": "c04_11",
+   "parts": 1416,
+   "models": 4,
+   "bytes": 23166
+  },
+  {
+   "name": "c04_12",
+   "parts": 3208,
+   "models": 7,
+   "bytes": 55347
+  },
+  {
+   "name": "c04_13",
+   "parts": 210,
+   "models": 6,
+   "bytes": 6744
+  },
+  {
+   "name": "c04_14",
+   "parts": 1918,
+   "models": 5,
+   "bytes": 30300
+  },
+  {
+   "name": "c04_15",
+   "parts": 184,
+   "models": 1,
+   "bytes": 4976
+  },
+  {
+   "name": "c04_16",
+   "parts": 96,
+   "models": 1,
+   "bytes": 2751
+  },
+  {
+   "name": "c05_-2",
+   "parts": 32,
+   "models": 1,
+   "bytes": 1142
+  },
+  {
+   "name": "c05_-1",
+   "parts": 23,
+   "models": 1,
+   "bytes": 854
+  },
+  {
+   "name": "c05_00",
+   "parts": 2134,
+   "models": 42,
+   "bytes": 34575
+  },
+  {
+   "name": "c05_01",
+   "parts": 2334,
+   "models": 40,
+   "bytes": 38177
+  },
+  {
+   "name": "c05_02",
+   "parts": 1272,
+   "models": 14,
+   "bytes": 22315
+  },
+  {
+   "name": "c05_03",
+   "parts": 8292,
+   "models": 25,
+   "bytes": 173861
+  },
+  {
+   "name": "c05_04",
+   "parts": 294,
+   "models": 3,
+   "bytes": 8427
+  },
+  {
+   "name": "c05_05",
+   "parts": 630,
+   "models": 8,
+   "bytes": 15926
+  },
+  {
+   "name": "c05_06",
+   "parts": 68,
+   "models": 5,
+   "bytes": 2415
+  },
+  {
+   "name": "c05_07",
+   "parts": 158,
+   "models": 3,
+   "bytes": 4180
+  },
+  {
+   "name": "c05_08",
+   "parts": 1545,
+   "models": 9,
+   "bytes": 26649
+  },
+  {
+   "name": "c05_09",
+   "parts": 647,
+   "models": 5,
+   "bytes": 9789
+  },
+  {
+   "name": "c05_10",
+   "parts": 657,
+   "models": 9,
+   "bytes": 12069
+  },
+  {
+   "name": "c05_11",
+   "parts": 1660,
+   "models": 22,
+   "bytes": 29398
+  },
+  {
+   "name": "c05_12",
+   "parts": 1607,
+   "models": 9,
+   "bytes": 33943
+  },
+  {
+   "name": "c05_13",
+   "parts": 1123,
+   "models": 10,
+   "bytes": 25356
+  },
+  {
+   "name": "c05_14",
+   "parts": 390,
+   "models": 4,
+   "bytes": 11236
+  },
+  {
+   "name": "c05_15",
+   "parts": 375,
+   "models": 1,
+   "bytes": 9897
+  },
+  {
+   "name": "c06_-4",
+   "parts": 39,
+   "models": 1,
+   "bytes": 1407
+  },
+  {
+   "name": "c06_-3",
+   "parts": 44,
+   "models": 1,
+   "bytes": 1453
+  },
+  {
+   "name": "c06_-2",
+   "parts": 76,
+   "models": 1,
+   "bytes": 2290
+  },
+  {
+   "name": "c06_-1",
+   "parts": 253,
+   "models": 2,
+   "bytes": 4555
+  },
+  {
+   "name": "c06_00",
+   "parts": 2672,
+   "models": 17,
+   "bytes": 37149
+  },
+  {
+   "name": "c06_01",
+   "parts": 1325,
+   "models": 12,
+   "bytes": 24280
+  },
+  {
+   "name": "c06_02",
+   "parts": 717,
+   "models": 9,
+   "bytes": 12661
+  },
+  {
+   "name": "c06_03",
+   "parts": 1211,
+   "models": 6,
+   "bytes": 27298
+  },
+  {
+   "name": "c06_04",
+   "parts": 683,
+   "models": 5,
+   "bytes": 15937
+  },
+  {
+   "name": "c06_05",
+   "parts": 521,
+   "models": 5,
+   "bytes": 13533
+  },
+  {
+   "name": "c06_06",
+   "parts": 949,
+   "models": 10,
+   "bytes": 17785
+  },
+  {
+   "name": "c06_07",
+   "parts": 582,
+   "models": 13,
+   "bytes": 14033
+  },
+  {
+   "name": "c06_08",
+   "parts": 333,
+   "models": 5,
+   "bytes": 9434
+  },
+  {
+   "name": "c06_09",
+   "parts": 1284,
+   "models": 9,
+   "bytes": 28182
+  },
+  {
+   "name": "c06_10",
+   "parts": 720,
+   "models": 6,
+   "bytes": 17186
+  },
+  {
+   "name": "c06_11",
+   "parts": 882,
+   "models": 10,
+   "bytes": 16670
+  },
+  {
+   "name": "c06_12",
+   "parts": 2464,
+   "models": 8,
+   "bytes": 30788
+  },
+  {
+   "name": "c06_13",
+   "parts": 1693,
+   "models": 10,
+   "bytes": 23830
+  },
+  {
+   "name": "c06_14",
+   "parts": 2114,
+   "models": 7,
+   "bytes": 35489
+  },
+  {
+   "name": "c06_15",
+   "parts": 112,
+   "models": 1,
+   "bytes": 3557
+  },
+  {
+   "name": "c06_16",
+   "parts": 40,
+   "models": 1,
+   "bytes": 1355
+  },
+  {
+   "name": "c07_-4",
+   "parts": 14,
+   "models": 1,
+   "bytes": 609
+  },
+  {
+   "name": "c07_-2",
+   "parts": 181,
+   "models": 1,
+   "bytes": 4309
+  },
+  {
+   "name": "c07_-1",
+   "parts": 63,
+   "models": 1,
+   "bytes": 2069
+  },
+  {
+   "name": "c07_00",
+   "parts": 331,
+   "models": 4,
+   "bytes": 8500
+  },
+  {
+   "name": "c07_01",
+   "parts": 174,
+   "models": 3,
+   "bytes": 5714
+  },
+  {
+   "name": "c07_02",
+   "parts": 2642,
+   "models": 7,
+   "bytes": 42990
+  },
+  {
+   "name": "c07_03",
+   "parts": 9352,
+   "models": 5,
+   "bytes": 185056
+  },
+  {
+   "name": "c07_04",
+   "parts": 2240,
+   "models": 6,
+   "bytes": 42578
+  },
+  {
+   "name": "c07_05",
+   "parts": 2084,
+   "models": 9,
+   "bytes": 44395
+  },
+  {
+   "name": "c07_06",
+   "parts": 3649,
+   "models": 15,
+   "bytes": 73857
+  },
+  {
+   "name": "c07_07",
+   "parts": 1902,
+   "models": 7,
+   "bytes": 25100
+  },
+  {
+   "name": "c07_08",
+   "parts": 54,
+   "models": 4,
+   "bytes": 1664
+  },
+  {
+   "name": "c07_09",
+   "parts": 1346,
+   "models": 5,
+   "bytes": 19044
+  },
+  {
+   "name": "c07_10",
+   "parts": 1727,
+   "models": 4,
+   "bytes": 24682
+  },
+  {
+   "name": "c07_11",
+   "parts": 1237,
+   "models": 5,
+   "bytes": 19401
+  },
+  {
+   "name": "c07_12",
+   "parts": 1412,
+   "models": 23,
+   "bytes": 23210
+  },
+  {
+   "name": "c07_13",
+   "parts": 2948,
+   "models": 15,
+   "bytes": 39623
+  },
+  {
+   "name": "c07_14",
+   "parts": 1365,
+   "models": 21,
+   "bytes": 23245
+  },
+  {
+   "name": "c07_15",
+   "parts": 107,
+   "models": 1,
+   "bytes": 3324
+  },
+  {
+   "name": "c07_16",
+   "parts": 40,
+   "models": 1,
+   "bytes": 1374
+  },
+  {
+   "name": "c08_-2",
+   "parts": 3,
+   "models": 1,
+   "bytes": 267
+  },
+  {
+   "name": "c08_02",
+   "parts": 21,
+   "models": 3,
+   "bytes": 831
+  },
+  {
+   "name": "c08_03",
+   "parts": 15,
+   "models": 2,
+   "bytes": 663
+  },
+  {
+   "name": "c08_04",
+   "parts": 19,
+   "models": 2,
+   "bytes": 898
+  },
+  {
+   "name": "c08_05",
+   "parts": 187,
+   "models": 3,
+   "bytes": 5518
+  },
+  {
+   "name": "c08_06",
+   "parts": 87,
+   "models": 3,
+   "bytes": 3335
+  },
+  {
+   "name": "c08_07",
+   "parts": 53,
+   "models": 3,
+   "bytes": 2415
+  },
+  {
+   "name": "c08_08",
+   "parts": 41,
+   "models": 3,
+   "bytes": 2414
+  },
+  {
+   "name": "c08_09",
+   "parts": 490,
+   "models": 4,
+   "bytes": 11953
+  },
+  {
+   "name": "c08_10",
+   "parts": 151,
+   "models": 6,
+   "bytes": 4034
+  },
+  {
+   "name": "c08_11",
+   "parts": 732,
+   "models": 5,
+   "bytes": 14243
+  },
+  {
+   "name": "c08_12",
+   "parts": 667,
+   "models": 9,
+   "bytes": 13449
+  },
+  {
+   "name": "c08_13",
+   "parts": 1055,
+   "models": 25,
+   "bytes": 17938
+  },
+  {
+   "name": "c08_14",
+   "parts": 1511,
+   "models": 24,
+   "bytes": 24976
+  },
+  {
+   "name": "c08_15",
+   "parts": 142,
+   "models": 1,
+   "bytes": 4339
+  },
+  {
+   "name": "c09_05",
+   "parts": 1259,
+   "models": 1,
+   "bytes": 24348
+  },
+  {
+   "name": "c09_10",
+   "parts": 4,
+   "models": 3,
+   "bytes": 457
+  },
+  {
+   "name": "c09_11",
+   "parts": 90,
+   "models": 3,
+   "bytes": 2860
+  },
+  {
+   "name": "c09_12",
+   "parts": 347,
+   "models": 5,
+   "bytes": 8593
+  },
+  {
+   "name": "c09_13",
+   "parts": 359,
+   "models": 6,
+   "bytes": 7538
+  },
+  {
+   "name": "c09_14",
+   "parts": 1018,
+   "models": 6,
+   "bytes": 17062
+  },
+  {
+   "name": "c09_15",
+   "parts": 42,
+   "models": 1,
+   "bytes": 1489
+  },
+  {
+   "name": "c09_16",
+   "parts": 166,
+   "models": 1,
+   "bytes": 4375
+  },
+  {
+   "name": "c10_-2",
+   "parts": 6,
+   "models": 1,
+   "bytes": 382
+  },
+  {
+   "name": "c10_-1",
+   "parts": 56,
+   "models": 1,
+   "bytes": 1892
+  },
+  {
+   "name": "c10_00",
+   "parts": 796,
+   "models": 5,
+   "bytes": 15215
+  },
+  {
+   "name": "c10_01",
+   "parts": 144,
+   "models": 4,
+   "bytes": 4151
+  },
+  {
+   "name": "c10_02",
+   "parts": 21,
+   "models": 3,
+   "bytes": 1662
+  },
+  {
+   "name": "c10_03",
+   "parts": 23,
+   "models": 3,
+   "bytes": 1708
+  },
+  {
+   "name": "c10_04",
+   "parts": 17,
+   "models": 3,
+   "bytes": 1554
+  },
+  {
+   "name": "c10_05",
+   "parts": 15,
+   "models": 3,
+   "bytes": 977
+  },
+  {
+   "name": "c10_06",
+   "parts": 38,
+   "models": 3,
+   "bytes": 1105
+  },
+  {
+   "name": "c10_07",
+   "parts": 1,
+   "models": 2,
+   "bytes": 271
+  },
+  {
+   "name": "c10_11",
+   "parts": 2517,
+   "models": 3,
+   "bytes": 43423
+  },
+  {
+   "name": "c10_13",
+   "parts": 25,
+   "models": 2,
+   "bytes": 1073
+  },
+  {
+   "name": "c10_14",
+   "parts": 291,
+   "models": 4,
+   "bytes": 9383
+  },
+  {
+   "name": "c10_15",
+   "parts": 71,
+   "models": 1,
+   "bytes": 2289
+  },
+  {
+   "name": "c10_16",
+   "parts": 69,
+   "models": 1,
+   "bytes": 2277
+  },
+  {
+   "name": "c11_-2",
+   "parts": 116,
+   "models": 1,
+   "bytes": 3267
+  },
+  {
+   "name": "c11_00",
+   "parts": 97,
+   "models": 3,
+   "bytes": 2340
+  },
+  {
+   "name": "c11_01",
+   "parts": 70,
+   "models": 3,
+   "bytes": 3235
+  },
+  {
+   "name": "c11_02",
+   "parts": 2227,
+   "models": 10,
+   "bytes": 26442
+  },
+  {
+   "name": "c11_03",
+   "parts": 77,
+   "models": 4,
+   "bytes": 2265
+  },
+  {
+   "name": "c11_04",
+   "parts": 2047,
+   "models": 4,
+   "bytes": 18636
+  },
+  {
+   "name": "c11_05",
+   "parts": 377,
+   "models": 4,
+   "bytes": 10627
+  },
+  {
+   "name": "c11_06",
+   "parts": 466,
+   "models": 4,
+   "bytes": 8775
+  },
+  {
+   "name": "c11_07",
+   "parts": 35,
+   "models": 4,
+   "bytes": 1323
+  },
+  {
+   "name": "c11_08",
+   "parts": 2026,
+   "models": 10,
+   "bytes": 41061
+  },
+  {
+   "name": "c11_09",
+   "parts": 3,
+   "models": 3,
+   "bytes": 1541
+  },
+  {
+   "name": "c11_10",
+   "parts": 65,
+   "models": 4,
+   "bytes": 2018
+  },
+  {
+   "name": "c11_11",
+   "parts": 1,
+   "models": 2,
+   "bytes": 250
+  },
+  {
+   "name": "c11_14",
+   "parts": 2,
+   "models": 1,
+   "bytes": 238
+  },
+  {
+   "name": "c11_15",
+   "parts": 190,
+   "models": 1,
+   "bytes": 5431
+  },
+  {
+   "name": "c11_16",
+   "parts": 20,
+   "models": 1,
+   "bytes": 782
+  },
+  {
+   "name": "c12_-2",
+   "parts": 5,
+   "models": 1,
+   "bytes": 343
+  },
+  {
+   "name": "c12_-1",
+   "parts": 55,
+   "models": 1,
+   "bytes": 1662
+  },
+  {
+   "name": "c12_00",
+   "parts": 13,
+   "models": 3,
+   "bytes": 1657
+  },
+  {
+   "name": "c12_01",
+   "parts": 0,
+   "models": 1,
+   "bytes": 908
+  },
+  {
+   "name": "c12_02",
+   "parts": 479,
+   "models": 4,
+   "bytes": 8540
+  },
+  {
+   "name": "c12_03",
+   "parts": 2025,
+   "models": 7,
+   "bytes": 32833
+  },
+  {
+   "name": "c12_04",
+   "parts": 203,
+   "models": 3,
+   "bytes": 6550
+  },
+  {
+   "name": "c12_05",
+   "parts": 1148,
+   "models": 4,
+   "bytes": 18881
+  },
+  {
+   "name": "c12_06",
+   "parts": 894,
+   "models": 5,
+   "bytes": 15826
+  },
+  {
+   "name": "c12_07",
+   "parts": 836,
+   "models": 4,
+   "bytes": 11117
+  },
+  {
+   "name": "c12_08",
+   "parts": 487,
+   "models": 4,
+   "bytes": 9066
+  },
+  {
+   "name": "c12_09",
+   "parts": 117,
+   "models": 3,
+   "bytes": 4292
+  },
+  {
+   "name": "c12_10",
+   "parts": 317,
+   "models": 5,
+   "bytes": 5890
+  },
+  {
+   "name": "c12_11",
+   "parts": 11,
+   "models": 4,
+   "bytes": 1597
+  },
+  {
+   "name": "c12_12",
+   "parts": 96,
+   "models": 4,
+   "bytes": 2548
+  },
+  {
+   "name": "c12_14",
+   "parts": 1996,
+   "models": 1,
+   "bytes": 42687
+  },
+  {
+   "name": "c12_15",
+   "parts": 45,
+   "models": 1,
+   "bytes": 1526
+  },
+  {
+   "name": "c12_16",
+   "parts": 23,
+   "models": 1,
+   "bytes": 884
+  },
+  {
+   "name": "c13_-2",
+   "parts": 37,
+   "models": 1,
+   "bytes": 1329
+  },
+  {
+   "name": "c13_-1",
+   "parts": 523,
+   "models": 3,
+   "bytes": 12952
+  },
+  {
+   "name": "c13_00",
+   "parts": 811,
+   "models": 6,
+   "bytes": 14397
+  },
+  {
+   "name": "c13_01",
+   "parts": 69,
+   "models": 3,
+   "bytes": 2376
+  },
+  {
+   "name": "c13_02",
+   "parts": 172,
+   "models": 6,
+   "bytes": 4466
+  },
+  {
+   "name": "c13_03",
+   "parts": 1509,
+   "models": 15,
+   "bytes": 25863
+  },
+  {
+   "name": "c13_04",
+   "parts": 710,
+   "models": 6,
+   "bytes": 14567
+  },
+  {
+   "name": "c13_05",
+   "parts": 5190,
+   "models": 4,
+   "bytes": 41182
+  },
+  {
+   "name": "c13_06",
+   "parts": 2719,
+   "models": 10,
+   "bytes": 31602
+  },
+  {
+   "name": "c13_07",
+   "parts": 1862,
+   "models": 5,
+   "bytes": 24886
+  },
+  {
+   "name": "c13_08",
+   "parts": 1659,
+   "models": 8,
+   "bytes": 14020
+  },
+  {
+   "name": "c13_09",
+   "parts": 2449,
+   "models": 7,
+   "bytes": 21951
+  },
+  {
+   "name": "c13_10",
+   "parts": 196,
+   "models": 3,
+   "bytes": 6597
+  },
+  {
+   "name": "c13_11",
+   "parts": 862,
+   "models": 4,
+   "bytes": 14583
+  },
+  {
+   "name": "c13_12",
+   "parts": 1102,
+   "models": 6,
+   "bytes": 17604
+  },
+  {
+   "name": "c13_13",
+   "parts": 2,
+   "models": 3,
+   "bytes": 471
+  },
+  {
+   "name": "c13_16",
+   "parts": 23,
+   "models": 1,
+   "bytes": 693
+  },
+  {
+   "name": "c14_-2",
+   "parts": 21,
+   "models": 1,
+   "bytes": 801
+  },
+  {
+   "name": "c14_-1",
+   "parts": 98,
+   "models": 1,
+   "bytes": 2816
+  },
+  {
+   "name": "c14_00",
+   "parts": 473,
+   "models": 4,
+   "bytes": 11657
+  },
+  {
+   "name": "c14_01",
+   "parts": 324,
+   "models": 2,
+   "bytes": 8445
+  },
+  {
+   "name": "c14_02",
+   "parts": 459,
+   "models": 4,
+   "bytes": 11359
+  },
+  {
+   "name": "c14_03",
+   "parts": 1039,
+   "models": 3,
+   "bytes": 26707
+  },
+  {
+   "name": "c14_04",
+   "parts": 194,
+   "models": 2,
+   "bytes": 5214
+  },
+  {
+   "name": "c14_05",
+   "parts": 127,
+   "models": 1,
+   "bytes": 3797
+  },
+  {
+   "name": "c14_08",
+   "parts": 29,
+   "models": 1,
+   "bytes": 1043
+  },
+  {
+   "name": "c14_09",
+   "parts": 451,
+   "models": 1,
+   "bytes": 12458
+  },
+  {
+   "name": "c14_10",
+   "parts": 66,
+   "models": 2,
+   "bytes": 2173
+  },
+  {
+   "name": "c14_11",
+   "parts": 245,
+   "models": 2,
+   "bytes": 6460
+  },
+  {
+   "name": "c14_12",
+   "parts": 87,
+   "models": 2,
+   "bytes": 2478
+  },
+  {
+   "name": "c14_13",
+   "parts": 6,
+   "models": 1,
+   "bytes": 366
+  },
+  {
+   "name": "c15_-2",
+   "parts": 18,
+   "models": 1,
+   "bytes": 736
+  },
+  {
+   "name": "c15_-1",
+   "parts": 41,
+   "models": 1,
+   "bytes": 1415
+  },
+  {
+   "name": "c15_00",
+   "parts": 22,
+   "models": 1,
+   "bytes": 794
+  },
+  {
+   "name": "c15_01",
+   "parts": 11,
+   "models": 1,
+   "bytes": 500
+  },
+  {
+   "name": "c15_02",
+   "parts": 30,
+   "models": 1,
+   "bytes": 1033
+  },
+  {
+   "name": "c15_04",
+   "parts": 24,
+   "models": 1,
+   "bytes": 951
+  },
+  {
+   "name": "c15_05",
+   "parts": 17,
+   "models": 1,
+   "bytes": 710
+  },
+  {
+   "name": "c15_06",
+   "parts": 17,
+   "models": 1,
+   "bytes": 692
+  },
+  {
+   "name": "c15_09",
+   "parts": 91,
+   "models": 1,
+   "bytes": 2810
+  },
+  {
+   "name": "c15_10",
+   "parts": 29,
+   "models": 1,
+   "bytes": 1078
+  },
+  {
+   "name": "c15_11",
+   "parts": 15,
+   "models": 1,
+   "bytes": 636
+  },
+  {
+   "name": "c15_12",
+   "parts": 10,
+   "models": 1,
+   "bytes": 496
+  },
+  {
+   "name": "c15_13",
+   "parts": 3,
+   "models": 1,
+   "bytes": 274
+  },
+  {
+   "name": "c16_-1",
+   "parts": 21,
+   "models": 1,
+   "bytes": 856
+  },
+  {
+   "name": "c16_02",
+   "parts": 3,
+   "models": 1,
+   "bytes": 273
+  },
+  {
+   "name": "c16_03",
+   "parts": 1,
+   "models": 1,
+   "bytes": 199
+  }
+ ]
+}

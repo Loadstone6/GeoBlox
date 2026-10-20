@@ -5,35 +5,71 @@
     "ReplicatedStorage": {
       "GeoBlox": {
         "$className": "Folder",
-        "Shared": { "$path": "src/shared" },
-        "Generated": { "$path": "src/generated" }
+        "Shared": {
+          "$path": "src/shared"
+        },
+        "Generated": {
+          "$path": "src/generated"
+        }
       }
     },
     "ServerScriptService": {
-      "Server": { "$path": "src/server" },
+      "Server": {
+        "$path": "src/server"
+      },
       "TerrainWorkers": {
         "$className": "Folder",
-        "Worker1": { "$className": "Actor", "TerrainWorker": { "$path": "src/worker/TerrainWorker.server.luau" } },
-        "Worker2": { "$className": "Actor", "TerrainWorker": { "$path": "src/worker/TerrainWorker.server.luau" } },
-        "Worker3": { "$className": "Actor", "TerrainWorker": { "$path": "src/worker/TerrainWorker.server.luau" } },
-        "Worker4": { "$className": "Actor", "TerrainWorker": { "$path": "src/worker/TerrainWorker.server.luau" } }
+        "Worker1": {
+          "$className": "Actor",
+          "TerrainWorker": {
+            "$path": "src/worker/TerrainWorker.server.luau"
+          }
+        },
+        "Worker2": {
+          "$className": "Actor",
+          "TerrainWorker": {
+            "$path": "src/worker/TerrainWorker.server.luau"
+          }
+        },
+        "Worker3": {
+          "$className": "Actor",
+          "TerrainWorker": {
+            "$path": "src/worker/TerrainWorker.server.luau"
+          }
+        },
+        "Worker4": {
+          "$className": "Actor",
+          "TerrainWorker": {
+            "$path": "src/worker/TerrainWorker.server.luau"
+          }
+        }
       }
     },
     "ServerStorage": {
       "GeoBlox": {
         "$className": "Folder",
-        "ChunkDone": { "$className": "BindableEvent" }
+        "ChunkDone": {
+          "$className": "BindableEvent"
+        }
       },
-      "GeoBloxTerrain": { "$path": "src/generated_server/Terrain" }
+      "GeoBloxTerrain": {
+        "$path": "src/generated_server/Terrain"
+      }
     },
     "StarterPlayer": {
-      "$properties": { "CameraMaxZoomDistance": 3000 },
+      "$properties": {
+        "CameraMaxZoomDistance": 3000
+      },
       "StarterPlayerScripts": {
-        "Client": { "$path": "src/client" }
+        "Client": {
+          "$path": "src/client"
+        }
       }
     },
     "Players": {
-      "$properties": { "CharacterAutoLoads": false }
+      "$properties": {
+        "CharacterAutoLoads": false
+      }
     },
     "Lighting": {
       "$properties": {
@@ -47,9 +83,17 @@
       }
     },
     "Workspace": {
-      "$properties": { "StreamingEnabled": false },
+      "$properties": {
+        "StreamingEnabled": true,
+        "StreamingTargetRadius": 1600,
+        "StreamingMinRadius": 420,
+        "StreamingIntegrityMode": "PauseOutsideLoadedArea",
+        "StreamOutBehavior": "Opportunistic"
+      },
       "Terrain": {
-        "$properties": { "Decoration": true }
+        "$properties": {
+          "Decoration": true
+        }
       }
     }
   }

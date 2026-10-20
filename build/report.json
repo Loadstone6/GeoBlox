@@ -6,23 +6,17 @@
     530900.0,
     180600.0
   ],
-  "buildings": {
-    "total": 914,
-    "s3db": 83,
-    "lidar": 831,
-    "courtyards_detected": 13,
-    "roof_planes": 1771
-  },
   "ground": {
-    "roads": 1407,
-    "carriageway_m2": 213892,
-    "hardscape_m2": 575710,
-    "green_m2": 279925,
+    "roads": 1456,
+    "passages": 64,
+    "elevated_stretches": 24,
+    "carriageway_m2": 215366,
+    "hardscape_m2": 577933,
+    "green_m2": 279688,
     "thames_level_m_odn": 3.25,
     "bridges": [
       "Hungerford Bridge",
       "Waterloo Bridge",
-      "Lambeth Bridge",
       "Blue Bridge",
       "unnamed",
       "unnamed",
@@ -40,44 +34,217 @@
       "Golden Jubilee Bridge",
       "Westminster Bridge"
     ],
-    "width_from_kerbs_fraction": 0.117
+    "width_from_kerbs_fraction": 0.114
   },
-  "trees": 4220,
-  "props": 2011,
-  "chunks": 325,
-  "encoded_mb": 17.22,
-  "triangles": {
-    "window_frame@lod0": 183188,
-    "roof_pitched@lod0": 157282,
-    "wall_stone@lod0": 118473,
-    "window_glass@lod0": 82277,
-    "kerb@lod0": 55020,
-    "wall_brick@lod0": 49938,
-    "roof_flat@lod0": 39497,
-    "pavement@lod2": 35496,
-    "bridge@lod2": 26178,
-    "wall_stone@lod1": 26161,
-    "window_lit@lod0": 25432,
-    "marking_white@lod0": 23468,
-    "wall_brick@lod1": 21407,
-    "road@lod2": 15385,
-    "roof_pitched@lod1": 12457,
-    "roof_glass@lod0": 11742,
-    "wall_glass@lod0": 10433,
-    "wall_concrete@lod0": 9110,
-    "marking_yellow@lod0": 8936,
-    "marking_red@lod0": 5992,
-    "roof_flat@lod1": 5283,
-    "curtain_glass@lod0": 3668,
-    "wall_plaster@lod0": 3657,
-    "wall_concrete@lod1": 3368,
-    "shopfront@lod0": 2974,
-    "wall_glass@lod1": 2636,
-    "embankment@lod2": 1804,
-    "gilt@lod0": 1767,
-    "wall_plaster@lod1": 1429,
-    "roof_metal@lod0": 108,
-    "wall_metal@lod0": 43
+  "buildings": {
+    "total": 927,
+    "s3db": 83,
+    "lidar": 844,
+    "courtyards_detected": 13,
+    "roof_faces": 4122,
+    "roof_planes_detected": 1560
   },
-  "seconds": 164.6
+  "trees": 4213,
+  "props": 2008,
+  "world": {
+    "building": {
+      "models": 927,
+      "parts": 180126,
+      "prefabs": 0
+    },
+    "streets": {
+      "models": 291,
+      "parts": 35899,
+      "prefabs": 0
+    },
+    "bridge": {
+      "models": 23,
+      "parts": 8810,
+      "prefabs": 0
+    },
+    "trees": {
+      "models": 183,
+      "parts": 0,
+      "prefabs": 4213
+    },
+    "prop": {
+      "models": 175,
+      "parts": 0,
+      "prefabs": 2008
+    },
+    "landmark": {
+      "models": 5,
+      "parts": 288,
+      "prefabs": 0
+    },
+    "total_parts": 225123,
+    "total_prefabs": 6221
+  },
+  "world_mb": 3.9,
+  "drivability": {
+    "samples": 51868,
+    "obstacle_samples": 5,
+    "obstacle_share": 0.0001,
+    "obstacles_by_kind": {
+      "streets": 3,
+      "building": 2
+    },
+    "top_obstacles": [
+      [
+        "streets:Streets",
+        3
+      ],
+      [
+        "building:The Adelphi",
+        2
+      ]
+    ],
+    "worst_step_m": 1.262,
+    "worst_step_at": [
+      530449.4,
+      180573.6,
+      "Adelphi Terrace"
+    ],
+    "steps_over_20cm": 26,
+    "largest_steps": [
+      [
+        1.26,
+        530449.4,
+        180573.6,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.94,
+        530408.8,
+        180542.8,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.88,
+        530447.8,
+        180572.4,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.83,
+        530448.2,
+        180572.7,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.82,
+        530408.4,
+        180542.5,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.8,
+        530407.2,
+        180541.6,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.72,
+        530447.4,
+        180572.1,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.71,
+        530447.0,
+        180571.8,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.62,
+        530407.6,
+        180541.9,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.6,
+        530408.0,
+        180542.2,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.58,
+        530448.6,
+        180573.0,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.58,
+        530409.2,
+        180543.1,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.51,
+        530406.8,
+        180541.3,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.48,
+        530449.0,
+        180573.3,
+        "Adelphi Terrace",
+        "residential"
+      ],
+      [
+        0.36,
+        530446.6,
+        180571.5,
+        "Adelphi Terrace",
+        "residential"
+      ]
+    ],
+    "examples": [
+      [
+        530451.4,
+        180575.1,
+        "streets:Streets",
+        "Adelphi Terrace"
+      ],
+      [
+        530441.0,
+        180567.3,
+        "building:The Adelphi",
+        "Adelphi Terrace"
+      ],
+      [
+        530414.7,
+        180547.4,
+        "streets:Streets",
+        "Adelphi Terrace"
+      ],
+      [
+        530440.7,
+        180567.1,
+        "building:The Adelphi",
+        "Adelphi Terrace"
+      ],
+      [
+        530414.9,
+        180547.4,
+        "streets:Streets",
+        "Adelphi Terrace"
+      ]
+    ]
+  },
+  "seconds": 237.8
 }

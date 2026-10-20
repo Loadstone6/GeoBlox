@@ -11,7 +11,8 @@ local Manifest =
 
 local Hud = {}
 
-local HELP = "[F] fly  [V] fast walk  [1-6] viewpoints  [T] +1h  [Y] pause time  [R] weather  [H] photo mode"
+local HELP =
+	"[W/S] drive  [A/D] steer  [Shift] handbrake  [Space] get out  [C] new car  [L] lights  [F] fly  [1-6] viewpoints  [T] +1h  [Y] pause  [R] weather  [H] photo"
 
 local function label(parent: Instance, pos: UDim2, textSize: number): TextLabel
 	local l = Instance.new("TextLabel")
@@ -64,7 +65,7 @@ function Hud.start(stats: () -> string): (() -> (), (string) -> ())
 		local fps = frames / acc
 		frames, acc = 0, 0
 		info.Text = string.format(
-			"GeoBlox · Westminster, reconstructed from LiDAR + OpenStreetMap\nFPS %d   %s",
+			"GeoBlox · Westminster, rebuilt from LiDAR + OpenStreetMap\nFPS %d   %s",
 			math.floor(fps + 0.5),
 			stats()
 		)

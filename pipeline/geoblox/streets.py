@@ -18,58 +18,51 @@ from collections import Counter
 
 import numpy as np
 import shapely
-from shapely.geometry import Point
+from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 
-from .config import PARAMS
-from .ground import Ground, Road, drape
-from .mesh import Collector, Piece
+from .ground import Ground, Road
+from .partmap import Look, Parts
 from .scene import Scene
 
-WHITE = np.array([0.88, 0.88, 0.86])
-YELLOW = np.array([0.86, 0.70, 0.18])
-RED = np.array([0.66, 0.12, 0.10])
+WHITE = Look("SmoothPlastic", (226, 226, 221), collide=False, shadow=False)
+YELLOW = Look("SmoothPlastic", (219, 178, 46), collide=False, shadow=False)
+RED = Look("SmoothPlastic", (168, 31, 26), collide=False, shadow=False)
 RED_ROUTE = {"trunk", "primary", "trunk_link", "primary_link"}
+TOP = 0.03  # m above the surface; markings are 8 cm parts so terrain noise never buries them
+THICK = 0.08
 
 
 class Builder:
-    def __init__(self, scene: Scene, ground: Ground):
-        self.scene = scene
-        self.ground = ground
-        self.v: dict[str, list] = {"marking_white": [], "marking_yellow": [], "marking_red": []}
+    """Markings as thin, non-colliding parts lying on the road surface."""
 
-    def strip(self, group: str, color: np.ndarray, pts: np.ndarray, width: float) -> None:
-        """Quad strip along a polyline (already on the road plane)."""
+    def __init__(self, P: Parts, zfn):
+        self.P = P
+        self.zfn = zfn
+        self.count = 0
+
+    def strip(self, look: Look, pts: np.ndarray, width: float, zfn=None) -> None:
         if len(pts) < 2:
             return
         if len(pts) > 2:
-            from shapely.geometry import LineString
-
-            pts = np.asarray(LineString(pts).simplify(0.02).coords)
-        d = np.gradient(pts, axis=0)
-        d /= np.maximum(np.linalg.norm(d, axis=1, keepdims=True), 1e-9)
-        n = np.column_stack([-d[:, 1], d[:, 0]]) * (width / 2)
-        left, right = pts + n, pts - n
-        xy = np.empty((2 * len(pts), 2))
-        xy[0::2], xy[1::2] = left, right
-        z = drape(self.scene, self.ground, xy, PARAMS.pavement_lift + PARAMS.marking_lift)
-        v = np.column_stack([xy, z])
-        t = []
+            pts = np.asarray(LineString(pts).simplify(0.03).coords)
+        z = (zfn or self.zfn)(pts) + TOP - THICK / 2
+        ext = min(width / 2, 0.05) if len(pts) > 2 else 0.0
         for i in range(len(pts) - 1):
-            a, b, c, e = 2 * i, 2 * i + 1, 2 * i + 2, 2 * i + 3
-            t.append([b, c, a])
-            t.append([b, e, c])
-        t = np.array(t)
-        # Ensure upward normals.
-        nrm = np.cross(v[t[:, 1]] - v[t[:, 0]], v[t[:, 2]] - v[t[:, 0]])
-        flip = nrm[:, 2] < 0
-        t[flip] = t[flip][:, [0, 2, 1]]
-        self.v[group].append(Piece(v, t, np.tile([0, 0, 1.0], (len(v), 1)), np.tile(color, (len(v), 1)), xy / 2))
+            a, b = pts[i], pts[i + 1]
+            L = float(np.linalg.norm(b - a))
+            if L < 0.02:
+                continue
+            d = (b - a) / L
+            p0 = np.array([*(a - d * ext), z[i]])
+            p1 = np.array([*(b + d * ext), z[i + 1]])
+            self.P.beam(p0, p1, width, THICK, (0.0, 0.0, 1.0), look)
+            self.count += 1
 
-    def rect(self, group, color, center, along, half_l, half_w):
+    def rect(self, look: Look, center, along, half_l, half_w, zfn=None):
         p0 = center - along * half_l
         p1 = center + along * half_l
-        self.strip(group, color, np.array([p0, p1]), half_w * 2)
+        self.strip(look, np.array([p0, p1]), half_w * 2, zfn)
 
 
 def _resample(r: Road, offset_fn, step: float = 0.5) -> tuple[np.ndarray, np.ndarray]:
@@ -129,10 +122,20 @@ def _cut(polys: list[np.ndarray], forbidden) -> list[np.ndarray]:
     return out
 
 
-def emit(col: Collector, scene: Scene, ground: Ground) -> list[dict]:
-    """Emit marking meshes; return crossing records for props (beacons, signals)."""
-    B = Builder(scene, ground)
-    roads = [r for r in ground.roads if r.kind != "cycleway"]
+def emit(P: Parts, scene: Scene, ground: Ground, road_z, deck_z) -> list[dict]:
+    """Emit marking parts; return crossing records for props (beacons, signals).
+
+    road_z(xy) is the terrain road surface; deck_z(road, xy) the deck surface
+    of an elevated bridge stretch."""
+    B = Builder(P, road_z)
+    decks = list(ground.deck_roads or [])
+    roads = [r for r in list(ground.roads) + decks if r.kind != "cycleway"]
+    deck_ids = {id(r) for r in decks}
+
+    def zf(r: Road):
+        if id(r) in deck_ids:
+            return lambda xy, r=r: deck_z(r, xy)
+        return road_z
     # Junction discs: nodes shared by 3+ road ends/ways.
     node_count: Counter = Counter()
     for r in roads:
@@ -166,6 +169,7 @@ def emit(col: Collector, scene: Scene, ground: Ground) -> list[dict]:
     forbidden = outside if forbidden is None else forbidden.union(outside)
 
     for r in roads:
+        z_of = zf(r)
         width = r.left + r.right
         two_way = not r.oneway
         lanes = r.lanes or (2 if two_way else max(1, int(np.median(width) // 3.3)))
@@ -175,7 +179,7 @@ def emit(col: Collector, scene: Scene, ground: Ground) -> list[dict]:
                 pts, ss = _resample(r, centre)
                 B_lines = _cut(_dashes(pts, ss, 4.0, 5.0), forbidden)
                 for ln in B_lines:
-                    B.strip("marking_white", WHITE, ln, 0.13)
+                    B.strip(WHITE, ln, 0.13, z_of)
             # Lane lines.
             per_dir = lanes // 2 if two_way else lanes
             if per_dir >= 2:
@@ -190,16 +194,16 @@ def emit(col: Collector, scene: Scene, ground: Ground) -> list[dict]:
 
                         pts, ss = _resample(r, lane_off)
                         for ln in _cut(_dashes(pts, ss, 2.0, 7.0), forbidden):
-                            B.strip("marking_white", WHITE, ln, 0.1)
+                            B.strip(WHITE, ln, 0.1, z_of)
             # Double no-waiting lines along both kerbs.
             if r.kind not in ("service", "busway"):
-                group, color = ("marking_red", RED) if r.kind in RED_ROUTE else ("marking_yellow", YELLOW)
+                look = RED if r.kind in RED_ROUTE else YELLOW
                 for side in (1, -1):
                     for k, inset in enumerate((0.25, 0.47)):
                         off = (lambda L, R, side=side, inset=inset: L - inset) if side == 1 else (lambda L, R, inset=inset: -(R - inset))
                         pts, ss = _resample(r, off)
                         for ln in _cut([pts], forbidden):
-                            B.strip(group, color, ln, 0.1)
+                            B.strip(look, ln, 0.1, z_of)
 
     # Crossings.
     records = []
@@ -212,6 +216,7 @@ def emit(col: Collector, scene: Scene, ground: Ground) -> list[dict]:
         if len(cand) == 0:
             continue
         r, line = road_lines[int(cand[0])]
+        z_of = zf(r)
         s = line.project(p.geom)
         a = np.array(line.interpolate(max(0, s - 1)).coords[0])
         b = np.array(line.interpolate(min(line.length, s + 1)).coords[0])
@@ -225,7 +230,7 @@ def emit(col: Collector, scene: Scene, ground: Ground) -> list[dict]:
             n = int((L + R) // 1.2)
             for k in range(n):
                 off = -half + 0.6 + k * 1.2
-                B.rect("marking_white", WHITE, c + across * off, along, 1.6, 0.3)
+                B.rect(WHITE, c + across * off, along, 1.6, 0.3, z_of)
             # Zig-zags on both approaches along both kerbs and the centre.
             for sgn in (1, -1):
                 for lat in (-half + 0.35, half - 0.35, 0.0):
@@ -234,30 +239,24 @@ def emit(col: Collector, scene: Scene, ground: Ground) -> list[dict]:
                         d = sgn * (3.0 + j * 0.9)
                         wob = 0.25 * (1 if j % 2 else -1)
                         zz.append(c + along * d + across * (lat + wob))
-                    B.strip("marking_white", WHITE, np.array(zz), 0.1)
+                    B.strip(WHITE, np.array(zz), 0.1, z_of)
             # Give-way line (dashes) 1 m before each side.
             for sgn in (1, -1):
                 for k in range(int(L + R)):
                     off = -half + 0.5 + k
-                    B.rect("marking_white", WHITE, c + along * sgn * 2.4 + across * off, across, 0.3, 0.1)
+                    B.rect(WHITE, c + along * sgn * 2.4 + across * off, across, 0.3, 0.1, z_of)
         else:
             # Signalised crossing: two lines of 200 mm studs 2.4 m apart.
             for sgn in (1, -1):
                 k = 0.0
                 while k < L + R:
-                    B.rect("marking_white", WHITE, c + along * sgn * 1.4 + across * (-half + k + 0.2), along, 0.1, 0.1)
+                    B.rect(WHITE, c + along * sgn * 1.4 + across * (-half + k + 0.2), along, 0.1, 0.1, z_of)
                     k += 0.6
             # Stop lines on the approach half (left-hand traffic).
             if not r.oneway:
-                B.rect("marking_white", WHITE, c - along * 3.4 + across * (half / 2), across, half / 2, 0.15)
-                B.rect("marking_white", WHITE, c + along * 3.4 - across * (half / 2), across, half / 2, 0.15)
+                B.rect(WHITE, c - along * 3.4 + across * (half / 2), across, half / 2, 0.15, z_of)
+                B.rect(WHITE, c + along * 3.4 - across * (half / 2), across, half / 2, 0.15, z_of)
             else:
-                B.rect("marking_white", WHITE, c - along * 3.4, across, half, 0.15)
-        records.append({"kind": kind, "c": c, "along": along, "across": across, "half": half})
-
-    from .mesh import merge
-
-    for group, pieces in B.v.items():
-        if pieces:
-            col.add_by_centroid((0,), group, merge(pieces))
+                B.rect(WHITE, c - along * 3.4, across, half, 0.15, z_of)
+        records.append({"kind": kind, "c": c, "along": along, "across": across, "half": half, "deck": id(r) in deck_ids})
     return records

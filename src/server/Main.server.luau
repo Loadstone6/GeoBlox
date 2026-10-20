@@ -1,8 +1,9 @@
 --!strict
 -- Server: lighting/atmosphere, terrain from the reconstructed ground model
--- (parallel Actors, nearest-to-spawn first), spawning players once the ground
--- under them exists. All mesh geometry is built on clients (EditableMesh
--- content does not replicate), so the server only owns terrain.
+-- (parallel Actors, nearest-to-spawn first: Roblox terrain is the street
+-- surface), then players spawn into a test car on Westminster Bridge. The city
+-- itself is baked into the place as parts (Workspace.City) and streamed by the
+-- engine.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +14,7 @@ local GeoBlox = ReplicatedStorage:WaitForChild("GeoBlox")
 local Manifest = require(GeoBlox:WaitForChild("Generated"):WaitForChild("Manifest")) :: any
 local Codec = require(GeoBlox:WaitForChild("Shared"):WaitForChild("Codec"))
 local TerrainBuild = require(GeoBlox.Shared:WaitForChild("TerrainBuild"))
+local Cars = require(script.Parent.Cars)
 local Environment = require(script.Parent.Environment)
 
 Environment.setup()
@@ -21,11 +23,12 @@ pcall(function()
 end)
 
 local spawnPos = Vector3.new(Manifest.spawn[1], Manifest.spawn[2] + 3, Manifest.spawn[3])
+local spawnLook = Vector3.new(Manifest.spawnLook[1], 0, Manifest.spawnLook[3])
 local spawn = Instance.new("SpawnLocation")
 spawn.Name = "GeoBloxSpawn"
 spawn.Anchored = true
 spawn.Size = Vector3.new(6, 1, 6)
-spawn.CFrame = CFrame.lookAt(spawnPos, spawnPos + Vector3.new(-1, 0, 0))
+spawn.CFrame = CFrame.lookAt(spawnPos, spawnPos + spawnLook)
 spawn.Transparency = 1
 spawn.CanCollide = false
 spawn.Neutral = true
@@ -136,35 +139,22 @@ task.spawn(function()
 	end
 end)
 
-local spawnPlaced = false
-local function placeSpawn()
-	if spawnPlaced then
-		return
-	end
-	spawnPlaced = true
-	-- Put the spawn on the generated terrain surface (the manifest height is approximate).
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = { workspace.Terrain }
-	local hit = workspace:Raycast(Vector3.new(spawnPos.X, 600, spawnPos.Z), Vector3.new(0, -800, 0), params)
-	if hit then
-		local p = hit.Position + Vector3.new(0, 3, 0)
-		spawn.CFrame = CFrame.lookAt(p, p + Vector3.new(-1, 0, 0))
-	end
-end
+Cars.start()
 
 local function spawnPlayer(player: Player)
 	local t0 = os.clock()
 	while not nearSpawnDone and os.clock() - t0 < 30 do
 		task.wait(0.1)
 	end
-	placeSpawn()
 	player:LoadCharacterAsync()
 end
 
 local function onPlayer(player: Player)
 	player.CharacterAdded:Connect(function(character)
 		local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+		character:WaitForChild("HumanoidRootPart")
+		-- Every (re)spawn starts in a car on the road, facing Big Ben.
+		task.defer(Cars.spawn, player, spawnPos - Vector3.new(0, 3, 0), spawnLook)
 		humanoid.Died:Connect(function()
 			task.wait(3)
 			if player.Parent then

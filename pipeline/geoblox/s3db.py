@@ -11,9 +11,9 @@ surface is an analytic height function over the footprint:
   dome       z = base + rh * sqrt(1 - (1 - d/dmax)^2)
   skillion   z = top - rh * t                     (t: normalised position along roof:direction)
 
-The footprint is triangulated (constrained Delaunay) with ridge constraints or
-a Steiner grid fine enough for curved shapes, then each vertex is lifted by the
-function. Wall tops follow the same function, so gable ends come out exact.
+buildparts.py turns these into parts: exact planes for gables, hips and
+pyramids, ellipsoids for domes, box strips for barrel vaults. Wall tops follow
+the same function, so gable ends come out exact.
 """
 
 from __future__ import annotations
@@ -21,10 +21,8 @@ from __future__ import annotations
 import numpy as np
 import shapely
 from shapely.geometry import LineString, Polygon
-from shapely.geometry.polygon import orient
 
-from .geomutil import direction_deg, grid_points, parse_colour, parse_length, triangulate
-from .mesh import Piece, crease_split, face_normals, orient_up
+from .geomutil import direction_deg, grid_points, parse_length
 
 DEFAULT_RH = {"gabled": 0.35, "hipped": 0.35, "pyramidal": 0.9, "dome": 1.0, "onion": 1.6, "round": 0.5, "skillion": 0.25, "gambrel": 0.45, "mansard": 0.3, "cone": 2.0, "half-hipped": 0.35}
 
@@ -145,96 +143,5 @@ def roof_function(poly: Polygon, tags: dict, h0: float, h1: float):
     return f, shape, rh, base, extra, steiner
 
 
-def _densify(ring: np.ndarray, step: float) -> np.ndarray:
-    out = []
-    n = len(ring)
-    for i in range(n):
-        a, b = ring[i], ring[(i + 1) % n]
-        out.append(a)
-        k = int(np.linalg.norm(b - a) // step)
-        for j in range(1, k + 1):
-            out.append(a + (b - a) * j / (k + 1))
-    return np.array(out)
-
-
 def is_gilt(c: np.ndarray) -> bool:
     return c[0] > 0.7 and c[1] > 0.55 and c[2] < 0.5 and (c[0] - c[2]) > 0.3
-
-
-def build_part(poly: Polygon, tags: dict, ground: float, wall_default: np.ndarray, roof_default: np.ndarray, ao_fn) -> list[tuple[str, Piece, bool]]:
-    """Returns [(group, piece, is_wall)]."""
-    hh = part_heights(tags)
-    if hh is None:
-        return []
-    h0, h1 = hh
-    if h1 - h0 < 0.05 or poly.area < 0.01:
-        return []
-    poly = orient(poly, 1.0)
-    f, shape, rh, base, extra, steiner = roof_function(poly, tags, h0, h1)
-    wall_c = parse_colour(tags.get("building:colour"))
-    if wall_c is None:
-        wall_c = parse_colour(tags.get("colour"))
-    roof_c = parse_colour(tags.get("roof:colour"))
-    wall_rgb = wall_c if wall_c is not None else wall_default
-    roof_rgb = roof_c if roof_c is not None else (wall_rgb if shape == "flat" else roof_default)
-    mat = tags.get("building:material", "")
-    wall_group = "wall_brick" if mat == "brick" else ("wall_glass" if mat == "glass" else ("wall_metal" if mat == "metal" else "wall_stone"))
-    if is_gilt(wall_rgb):
-        wall_group = "gilt"
-    roof_mat = tags.get("roof:material", "")
-    out: list[tuple[str, Piece, bool]] = []
-
-    # Roof.
-    V2, T = triangulate(poly, steiner, extra)
-    if len(T):
-        z = f(V2) + ground
-        v3 = np.column_stack([V2, z])
-        t = orient_up(v3, T)
-        nv, nt, nn, _ = crease_split(v3, t, 32.0)
-        ao = ao_fn(nv, nn)
-        col = roof_rgb[None, :] * (0.0 * ao + 1.0)[:, None]
-        pitched = shape != "flat"
-        if is_gilt(roof_rgb) or roof_mat in ("gold", "metal", "copper"):
-            group = "gilt" if is_gilt(roof_rgb) else "roof_metal"
-        elif roof_mat in ("glass",):
-            group = "roof_glass"
-        else:
-            group = "roof_pitched" if pitched else "roof_flat"
-        out.append((group, Piece(nv, nt, nn, col, nv[:, :2] / 2.0), False))
-        if h0 > 0.3:
-            # Underside of floating parts (clock faces, overhangs).
-            vb = np.column_stack([V2, np.full(len(V2), ground + h0)])
-            tb = T[:, [0, 2, 1]]
-            nb = np.tile([0, 0, -1.0], (len(vb), 1))
-            out.append((wall_group, Piece(vb, tb, nb, np.tile(wall_rgb * 0.6, (len(vb), 1)), vb[:, :2] / 2), True))
-
-    # Walls (tops follow the roof function, so gables close exactly).
-    bottom = ground + (h0 if h0 > 0.05 else -0.4)
-    step = 1.0 if shape in ("gabled", "round", "skillion", "pyramidal", "cone") else 4.0
-    pieces = []
-    for ring_geom in [poly.exterior, *poly.interiors]:
-        ring = _densify(np.array(ring_geom.coords)[:-1], step)
-        tops = f(ring) + ground
-        n = len(ring)
-        dist = 0.0
-        for i in range(n):
-            a, c = ring[i], ring[(i + 1) % n]
-            seg = c - a
-            length = float(np.linalg.norm(seg))
-            if length < 1e-3:
-                continue
-            d = seg / length
-            nrm = np.array([d[1], -d[0], 0.0])
-            za, zc = tops[i], tops[(i + 1) % n]
-            p = np.array([[a[0], a[1], bottom], [c[0], c[1], bottom], [c[0], c[1], zc], [a[0], a[1], za]])
-            uv = np.array([[dist, bottom - ground], [dist + length, bottom - ground], [dist + length, zc - ground], [dist, za - ground]]) / 2.0
-            nn = np.tile(nrm, (4, 1))
-            ao = ao_fn(p, nn)
-            col = wall_rgb[None, :] * (0.0 * ao + 1.0)[:, None]
-            pieces.append(Piece(p, np.array([[0, 1, 2], [0, 2, 3]]), nn, col, uv))
-            dist += length
-    if pieces:
-        from .mesh import merge
-
-        out.append((wall_group, merge(pieces), True))
-    return out

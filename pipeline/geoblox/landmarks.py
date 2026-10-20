@@ -125,3 +125,73 @@ def mask_eye(scene: Scene) -> int:
     sub = dsm.data[win]
     sub[m] = dtm.data[win][m] + 0.5
     return int(m.sum())
+
+
+# ---------------------------------------------------------------- parts
+
+def eye_parts(P, spec: dict) -> None:
+    """The London Eye as parts, in the measured wheel plane. The client turns
+    the parts tagged GeoBloxEyeWheel about the hub and keeps the capsules level."""
+    from .partmap import Look
+
+    S = 1.0 / PARAMS.metres_per_stud
+    hub = np.array(spec["hub"], dtype=np.float64)
+    X = np.array(spec["plane"], dtype=np.float64)
+    X /= np.linalg.norm(X)
+    Y = np.array([0.0, 1.0, 0.0])
+    Z = np.cross(X, Y)
+    R = float(spec["radius"])
+    white = Look("Metal", (232, 234, 236), collide=False, tag="GeoBloxEyeWheel")
+    cable = Look("Metal", (210, 212, 214), collide=False, shadow=False, tag="GeoBloxEyeWheel")
+
+    def at(r: float, ang: float, z: float) -> np.ndarray:
+        return hub + X * (np.cos(ang) * r) + Y * (np.sin(ang) * r) + Z * z
+
+    n = 48
+    depth = 3.2 * S
+    inner = R - 4.5 * S
+    angs = np.linspace(0, 2 * np.pi, n, endpoint=False)
+    for z in (depth, -depth):
+        for i in range(n):
+            P.cylinder_s(at(R, angs[i], z), at(R, angs[(i + 1) % n], z), 0.9 * S, white)
+    for i in range(n):
+        P.cylinder_s(at(inner, angs[i], 0), at(inner, angs[(i + 1) % n], 0), 0.7 * S, white)
+        if i % 2 == 0:
+            P.cylinder_s(at(R, angs[i], depth), at(inner, angs[i], 0), 0.35 * S, white)
+            P.cylinder_s(at(R, angs[i], -depth), at(inner, angs[i], 0), 0.35 * S, white)
+        P.cylinder_s(at(inner, angs[i], 0), hub + Z * ((10 if i % 2 == 0 else -10) * S), 0.12 * S, cable)
+    P.cylinder_s(hub - Z * 11 * S, hub + Z * 11 * S, 3.2 * S, white)
+    # A-frame on the landward side of the spindle (static).
+    frame = Look("Metal", (226, 228, 230), collide=True)
+    axle = np.array(spec["axle"], dtype=np.float64)
+    land_end = hub + axle * 11 * S
+    ground = np.array([hub[0], spec["base_y"], hub[2]])
+    for side in (-1, 1):
+        foot = ground + axle * 52 * S + X * side * 24 * S
+        P.cylinder_s(foot, land_end, 1.8 * S, frame)
+    P.cylinder_s(ground + axle * 52 * S, land_end, 1.0 * S, frame)
+    # Capsules: glass ovoids hung outside the rim.
+    glass = Look("Glass", (200, 220, 232), collide=False, transparency=0.15, reflectance=0.25, tag="GeoBloxEyeCapsule")
+    for i in range(int(spec.get("capsules", 32))):
+        a = i / int(spec.get("capsules", 32)) * 2 * np.pi
+        c = at(R + 3.4 * S, a, 0.0)
+        P.ellipsoid_s(c, Z, Y, -X, np.array([8.0, 4.0, 4.0]) * S, glass)
+
+
+def dial_parts(P, dial: dict) -> None:
+    """One Elizabeth Tower clock dial (glows at night) with hour and minute
+    hands that the client sets to London time."""
+    from .partmap import Look
+
+    S = 1.0 / PARAMS.metres_per_stud
+    c = np.array(dial["center"], dtype=np.float64)
+    nrm = np.array(dial["normal"], dtype=np.float64)
+    nrm /= np.linalg.norm(nrm)
+    r = float(dial["radius"])
+    face = Look("SmoothPlastic", (240, 232, 206), collide=False, tag="GeoBloxDialGlow")
+    P.cylinder_s(c - nrm * 0.05 * S, c + nrm * 0.15 * S, 2 * r * 0.96, face)
+    up = np.array([0.0, 1.0, 0.0])
+    side = np.cross(up, nrm)
+    for tag, length, width, out in (("GeoBloxHourHand", 2.7, 0.45, 0.3), ("GeoBloxMinuteHand", 4.2, 0.3, 0.45)):
+        center = c + nrm * out * S + up * (length / 2 - 0.4) * S
+        P.add(0, center, side, up, nrm, np.array([width, length, 0.15]) * S, Look("Metal", (28, 28, 30), collide=False, tag=tag))

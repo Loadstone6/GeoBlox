@@ -108,11 +108,16 @@ def detect(scene: Scene, building_union, exclude=None) -> list[Tree]:
                 h, kind = 5.0, 3
             crown = max(1.5, 0.28 * h)
         ground = float(scene.dtm.sample(np.array([x]), np.array([y]))[0])
-        trees.append(Tree(x, y, ground, float(np.clip(h, 3.0, 40.0)), float(np.clip(crown, 1.2, 14.0)), kind, abs(hash((round(x, 1), round(y, 1)))) % 65536))
+        trees.append(Tree(x, y, ground, float(np.clip(h, 3.0, 40.0)), float(np.clip(crown, 1.2, 14.0)), kind, _seed(x, y)))
     for k in np.where(~used)[0]:
         x, y, h, crown = lidar[k]
         if not clip.contains(shapely.Point(x, y)):
             continue
         ground = float(scene.dtm.sample(np.array([x]), np.array([y]))[0])
-        trees.append(Tree(float(x), float(y), ground, float(np.clip(h, 3.0, 40.0)), float(np.clip(crown, 1.2, 14.0)), 1, abs(hash((round(x, 1), round(y, 1), 7))) % 65536))
+        trees.append(Tree(float(x), float(y), ground, float(np.clip(h, 3.0, 40.0)), float(np.clip(crown, 1.2, 14.0)), 1, _seed(x, y, 7)))
     return trees
+
+
+def _seed(x: float, y: float, salt: int = 0) -> int:
+    """Deterministic per-tree seed (Python's hash() is salted per process)."""
+    return (int(round(x * 10)) * 73856093 ^ int(round(y * 10)) * 19349663 ^ salt * 83492791) % 65536

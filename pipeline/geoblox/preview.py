@@ -1,20 +1,54 @@
-"""Preview renders of the reconstructed model (offline, for validation)."""
+"""Preview renders of the compiled world (offline, for validation): the
+parts exactly as Roblox will place them, terrain columns as the ground, and
+prefab trees approximated by their crown balls."""
 
 from __future__ import annotations
 
 import numpy as np
 
 from .config import BUILD, PARAMS
-from .mesh import Collector
+from .partmap import SHAPE_BALL, part_triangles
 from .render import render
 
 TERRAIN_RGB = {
     0: (0.5, 0.5, 0.5), 1: (0.25, 0.25, 0.26), 2: (0.62, 0.60, 0.56), 3: (0.36, 0.50, 0.24), 4: (0.30, 0.44, 0.22),
-    5: (0.40, 0.32, 0.24), 6: (0.6, 0.6, 0.58), 7: (0.2, 0.3, 0.32), 8: (0.32, 0.30, 0.26),
+    5: (0.40, 0.32, 0.24), 6: (0.6, 0.6, 0.58), 7: (0.2, 0.3, 0.32), 8: (0.32, 0.30, 0.26), 9: (0.35, 0.36, 0.38),
+    10: (0.70, 0.66, 0.56), 11: (0.42, 0.40, 0.38), 12: (0.55, 0.35, 0.28),
 }
+# Rough albedo response of Roblox materials relative to their colour.
+MATERIAL_GAIN = {"Glass": 0.8, "Neon": 1.3, "Metal": 0.9, "Asphalt": 0.85, "Slate": 0.9, "Foil": 1.1}
 
 
-def _terrain_mesh(scene, cols, region, step=2):
+def parts_mesh(region, rows) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Flat-shaded triangles (BNG metres) for part rows from partmap.Parts."""
+    e0, n0 = region.origin
+    mps = PARAMS.metres_per_stud
+    V, T, C, N = [], [], [], []
+    off = 0
+    for shape, center, R, size, look, extra in rows:
+        v, t = part_triangles(shape, center, R, size, extra)
+        # studs -> BNG metres (z up)
+        w = np.column_stack([v[:, 0] * mps + e0, n0 - v[:, 2] * mps, v[:, 1] * mps + PARAMS.h0])
+        tri = w[t]
+        nrm = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+        nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-12)
+        if shape == SHAPE_BALL or extra:
+            c = tri.mean(axis=1) - w.mean(axis=0)
+            flip = (nrm * c).sum(axis=1) < 0
+            nrm[flip] = -nrm[flip]
+        col = np.array(look.color, dtype=np.float64) / 255.0 * MATERIAL_GAIN.get(look.material, 1.0)
+        k = len(t)
+        V.append(tri.reshape(-1, 3))
+        T.append(np.arange(3 * k).reshape(k, 3) + off)
+        C.append(np.tile(col, (3 * k, 1)))
+        N.append(np.repeat(nrm, 3, axis=0))
+        off += 3 * k
+    if not V:
+        return np.zeros((0, 3)), np.zeros((0, 3), dtype=np.int64), np.zeros((0, 3)), np.zeros((0, 3))
+    return np.vstack(V), np.vstack(T), np.vstack(C), np.vstack(N)
+
+
+def terrain_mesh(cols, region, step: int = 1):
     e0, n0 = region.origin
     mps = PARAMS.metres_per_stud
     h = cols["height"][::step, ::step]
@@ -25,121 +59,71 @@ def _terrain_mesh(scene, cols, region, step=2):
     zs = cols["z0"] + (np.arange(0, cols["nz"], step) + 0.5) * 4
     gx, gz = np.meshgrid(xs, zs, indexing="ij")
     E = e0 + gx * mps
-    N = n0 - gz * mps
-    Z = np.where(np.isnan(w), h - 0.05, w)
-    v = np.column_stack([E.ravel(), N.ravel(), Z.ravel()])
+    Nn = n0 - gz * mps
+    Z = np.where(np.isnan(w), h, w)
+    v = np.column_stack([E.ravel(), Nn.ravel(), Z.ravel()])
     c = np.array([TERRAIN_RGB.get(int(k), (0.5, 0.5, 0.5)) for k in m.ravel()])
     c[~np.isnan(w.ravel())] = (0.22, 0.30, 0.32)
-    t = []
-    for i in range(nx - 1):
-        for j in range(nz - 1):
-            a = i * nz + j
-            t.append([a, a + nz, a + nz + 1])
-            t.append([a, a + nz + 1, a + 1])
-    t = np.array(t)
+    ii, jj = np.meshgrid(np.arange(nx - 1), np.arange(nz - 1), indexing="ij")
+    a = (ii * nz + jj).ravel()
+    t = np.vstack([np.column_stack([a, a + nz, a + nz + 1]), np.column_stack([a, a + nz + 1, a + 1])])
     nrm = np.tile([0, 0, 1.0], (len(v), 1))
     return v, t, c, nrm
 
 
-def _icosphere(sub=1):
-    t = (1 + 5 ** 0.5) / 2
-    v = [np.array(p, dtype=float) for p in [(-1, t, 0), (1, t, 0), (-1, -t, 0), (1, -t, 0), (0, -1, t), (0, 1, t), (0, -1, -t), (0, 1, -t), (t, 0, -1), (t, 0, 1), (-t, 0, -1), (-t, 0, 1)]]
-    v = [x / np.linalg.norm(x) for x in v]
-    f = [(0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11), (1, 5, 9), (5, 11, 4), (11, 10, 2), (10, 7, 6), (7, 1, 8),
-         (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9), (4, 9, 5), (2, 4, 11), (6, 2, 10), (8, 6, 7), (9, 8, 1)]
-    for _ in range(sub):
-        cache = {}
-        def mid(a, b):
-            k = (min(a, b), max(a, b))
-            if k not in cache:
-                m = (v[a] + v[b]) / 2
-                v.append(m / np.linalg.norm(m))
-                cache[k] = len(v) - 1
-            return cache[k]
-        nf = []
-        for a, b, c in f:
-            ab, bc, ca = mid(a, b), mid(b, c), mid(c, a)
-            nf += [(a, ab, ca), (b, bc, ab), (c, ca, bc), (ab, bc, ca)]
-        f = nf
-    return np.array(v), np.array(f)
+LEAF = {"tree_plane": (88, 112, 52), "tree_broadleaf": (72, 102, 46), "tree_conifer": (44, 70, 44), "tree_ornamental": (104, 128, 60)}
 
 
-ICO_V, ICO_F = _icosphere(1)
-LEAF = {0: [(88, 112, 52), (100, 122, 58), (78, 104, 48)], 1: [(72, 102, 46), (86, 114, 50), (64, 92, 42)], 2: [(44, 70, 44), (52, 78, 48), (40, 64, 40)], 3: [(104, 128, 60), (116, 138, 66), (96, 120, 56)]}
+def tree_mesh(region, world):
+    """Prefab trees approximated as a trunk and a crown ellipsoid (metres, z up)."""
+    from .partmap import Look, Parts
+
+    P = Parts(region)
+    mps = PARAMS.metres_per_stud
+    for m in world.models:
+        if m.kind != "trees":
+            continue
+        for name, x, y, z, _yaw, h, crown, _seed in m.prefabs:
+            base = np.array([x, y, z])
+            hs, cs = h / mps, max(1.2, crown) / mps
+            P.cylinder_s(base, base + np.array([0.0, hs * 0.45, 0.0]), max(0.25, h * 0.02) / mps, Look("Wood", (96, 84, 70)))
+            c = base + np.array([0.0, hs * 0.66, 0.0])
+            I = np.eye(3)
+            P.ellipsoid_s(c, I[:, 0], I[:, 1], I[:, 2], np.array([2 * cs, hs * 0.62, 2 * cs]), Look("LeafyGrass", LEAF.get(name, (72, 102, 46))))
+    return parts_mesh(region, P.rows)
 
 
-def _tree_mesh(trees):
-    """Same crown model as the Roblox client (src/client/Trees.luau), in metres (z up)."""
-    vs, ts, cs, ns = [], [], [], []
-    off = 0
-    for tr in trees:
-        rng = np.random.default_rng(tr.seed)
-        h, r = tr.height, max(1.2, tr.crown)
-        base = np.array([tr.x, tr.y, tr.ground])
-        cb = 0.25 if tr.kind == 2 else 0.38
-        mid = base + np.array([0, 0, h * (cb + (1 - cb) * 0.5)])
-        half_h = h * (1 - cb) * 0.5
-        pal = np.array(LEAF.get(tr.kind, LEAF[1])) / 255.0
-        n = 2 if tr.kind == 3 else int(rng.integers(4, 7))
-        for k in range(1, n + 1):
-            a = k / n * 2 * np.pi + rng.random() * 0.8
-            spread = r * (0.1 if k == 1 else 0.45)
-            c = mid + np.array([np.cos(a) * spread, np.sin(a) * spread, (rng.random() - 0.35) * half_h * 0.6])
-            rx = r * (0.6 + 0.15 * rng.random())
-            rz = half_h * (0.62 + 0.15 * rng.random())
-            ph = rng.random() * 10
-            d = ICO_V
-            jit = 1 + 0.14 * np.sin(d[:, 0] * 3.1 + ph) * np.cos(d[:, 2] * 2.7 - ph)
-            v = c + np.column_stack([d[:, 0] * rx * jit, d[:, 1] * rx * jit, d[:, 2] * rz * jit])
-            shade = (0.62 + 0.38 * (d[:, 2] * 0.5 + 0.5)) * (0.82 if k == 1 else 1.0)
-            vs.append(v)
-            ts.append(ICO_F + off)
-            cs.append(pal[k % 3][None, :] * shade[:, None])
-            ns.append(d)
-            off += len(v)
-        top = base + np.array([0, 0, h * (cb + 0.12)])
-        w = np.clip(h * 0.022, 0.2, 0.7)
-        tv = np.array([base + [-w, 0, 0], base + [w, 0, 0], top + [w * 0.6, 0, 0], top + [-w * 0.6, 0, 0]])
-        vs.append(tv)
-        ts.append(np.array([[0, 1, 2], [0, 2, 3], [0, 2, 1], [0, 3, 2]]) + off)
-        cs.append(np.tile([0.40, 0.36, 0.30], (4, 1)))
-        ns.append(np.tile([0, -1.0, 0], (4, 1)))
-        off += 4
-    if not vs:
-        return np.zeros((0, 3)), np.zeros((0, 3), dtype=int), np.zeros((0, 3)), np.zeros((0, 3))
-    return np.vstack(vs), np.vstack(ts), np.vstack(cs), np.vstack(ns)
+VIEWS = {
+    "overview": ((531150, 178750, 700), (530150, 179800, 0), 52),
+    "westminster": ((530620, 179480, 70), (530260, 179640, 40), 62),
+    "bridge_street": ((530470, 179668, 11.8), (530250, 179655, 30), 70),
+    "whitehall": ((530175, 179880, 6.5), (530130, 180250, 14), 70),
+    "parliament_sq": ((529990, 179500, 22), (530200, 179680, 30), 68),
+    "trafalgar": ((530120, 180250, 40), (529990, 180460, 18), 62),
+    "south_bank": ((530860, 179560, 60), (530580, 179980, 50), 62),
+}
 
 
-def render_all(scene, col: Collector, gnd, trees, cols, region) -> None:
+def render_views(meshes: list, names=None, size=(1600, 900), prefix: str = "preview_") -> list:
     V, T, C, N = [], [], [], []
     off = 0
-    for (chunk, lod, group), buf in col.groups.items():
-        if lod == 1 or group == "window_lit":
+    for v, t, c, n in meshes:
+        if len(v) == 0:
             continue
-        p = buf.merged()
-        V.append(p.v)
-        T.append(p.t + off)
-        C.append(p.c)
-        N.append(p.n)
-        off += len(p.v)
-    for v, t, c, n in (_terrain_mesh(scene, cols, region), _tree_mesh(trees)):
         V.append(v)
         T.append(t + off)
         C.append(c)
         N.append(n)
         off += len(v)
     V, T, C, N = np.vstack(V), np.vstack(T), np.vstack(C), np.vstack(N)
-    views = {
-        "overview": ((531150, 178750, 700), (530150, 179800, 0), 52),
-        "westminster": ((530620, 179480, 70), (530260, 179640, 40), 62),
-        "bridge_street": ((530470, 179672, 9.5), (530250, 179655, 30), 70),
-        "whitehall": ((530175, 179880, 6.5), (530130, 180250, 14), 70),
-        "parliament_sq": ((529990, 179500, 22), (530200, 179680, 30), 68),
-        "trafalgar": ((530120, 180250, 40), (529990, 180460, 18), 62),
-        "south_bank": ((530860, 179560, 60), (530580, 179980, 50), 62),
-    }
     BUILD.mkdir(parents=True, exist_ok=True)
-    for name, (eye, tgt, fov) in views.items():
-        img = render(V, T, C, N, eye=eye, target=tgt, fov_deg=fov, size=(1600, 900), fog=2200)
-        img.save(BUILD / f"preview_{name}.png")
+    out = []
+    for name, (eye, tgt, fov) in VIEWS.items():
+        if names and name not in names:
+            continue
+        img = render(V, T, C, N, eye=eye, target=tgt, fov_deg=fov, size=size, fog=2200)
+        path = BUILD / f"{prefix}{name}.png"
+        img.save(path)
+        out.append(path)
         print("rendered", name, flush=True)
+    return out

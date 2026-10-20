@@ -1,4 +1,6 @@
-"""Street furniture records (instanced by the Roblox client from parametric models)."""
+"""Street furniture placements (built from the shared Prefabs module by the
+place baker): mapped OSM furniture plus signal heads and Belisha beacons at
+mapped crossings and lamp columns where OSM has none."""
 
 from __future__ import annotations
 
@@ -8,7 +10,7 @@ import numpy as np
 import shapely
 from shapely.geometry import Point
 
-from .ground import Ground, drape
+from .ground import Ground
 from .scene import Scene
 
 TYPES = {
@@ -41,14 +43,19 @@ def _facing(ground: Ground, x: float, y: float) -> float:
     return float(np.arctan2(d[0], d[1]))
 
 
-def collect(scene: Scene, ground: Ground, crossings: list[dict]) -> list[Prop]:
+def collect(scene: Scene, ground: Ground, crossings: list[dict], surface, deck_at=None) -> list[Prop]:
+    """deck_at(x, y) -> deck height or None, for furniture on bridges."""
     import shapely.ops  # noqa: F401
 
     props: list[Prop] = []
     clip = scene.clip
 
     def z_at(x, y):
-        return float(drape(scene, ground, np.array([[x, y]]), 0.0)[0] + (0.18 if ground.hardscape.contains(Point(x, y)) else 0.0))
+        if deck_at is not None:
+            z = deck_at(x, y)
+            if z is not None:
+                return z
+        return float(surface.top(np.array([[x, y]]))[0])
 
     def add(kind: str, x: float, y: float, yaw: float | None = None, variant: int = 0):
         if not clip.contains(Point(x, y)):
@@ -85,7 +92,7 @@ def collect(scene: Scene, ground: Ground, crossings: list[dict]) -> list[Prop]:
         elif t.get("historic") in ("memorial", "monument") or t.get("tourism") == "artwork":
             if t.get("memorial") in ("plaque", "blue_plaque", "stolperstein") or t.get("artwork_type") in ("mural", "graffiti"):
                 continue
-            add("statue", x, y, None, int(abs(hash(t.get("name", ""))) % 4))
+            add("statue", x, y, None, int(sum(map(ord, t.get("name", ""))) % 4))
         elif t.get("tourism") == "information" and t.get("information") in ("board", "map"):
             add("info", x, y)
         elif hw == "traffic_signals":

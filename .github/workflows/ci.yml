@@ -37,7 +37,7 @@ jobs:
           echo "$HOME/bin" >> "$GITHUB_PATH"
 
       - name: Format
-        run: stylua --check src/shared src/client src/server src/worker tests
+        run: stylua --check src/shared src/client src/server src/worker tests tools
 
       - name: Type check
         run: |
@@ -45,11 +45,17 @@ jobs:
           luau-lsp analyze --sourcemap=sourcemap.json --definitions="$HOME/bin/globalTypes.d.luau" \
             --ignore="src/generated/**" --ignore="src/generated_server/**" src
 
-      - name: Decode generated city data
+      - name: Check generated city data
         run: lune run tests/run
 
       - name: Build place
         run: rojo build default.project.json -o GeoBlox.rbxl
+
+      - name: Bake the city into the place
+        run: lune run tools/bake GeoBlox.rbxl GeoBlox.rbxl
+
+      - name: Check the baked place
+        run: lune run tests/run GeoBlox.rbxl
 
       - uses: actions/upload-artifact@v4
         with:
