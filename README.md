@@ -66,7 +66,9 @@ The pipeline writes:
 - `src/generated_server` — terrain columns;
 - `build/report.json` — statistics, including a drivability check of every
   road;
-- `build/preview_*.png` — preview renders.
+- `build/preview_*.png` — preview renders. To re-render them from the
+  compiled world without rebuilding, run
+  `python -m geoblox.preview [view ...]` in `pipeline/`.
 
 Street furniture and trees are prefabs in
 [`src/shared/Prefabs.luau`](src/shared/Prefabs.luau). Edit one and re-bake to

@@ -303,7 +303,13 @@ The client also calls `RequestStreamAroundAsync` 2.5 s ahead of a moving car.
     resistance, capped by a friction circle;
   - forces go through VectorForces at the mounts, as DevForum advice prefers
     over impulses ([raycast suspensions](https://devforum.roblox.com/t/raycast-suspensions/3105353),
-    [scripted car physics](https://devforum.roblox.com/t/in-depth-scripted-car-physics/3915628)).
+    [scripted car physics](https://devforum.roblox.com/t/in-depth-scripted-car-physics/3915628));
+  - forces are set once per frame but integrated at 240 Hz, so a plain
+    spring bounces apart below about 25 fps. The spring force is the
+    backward-Euler solution over the frame time, with gravity included so
+    static sag stays exact; stiffness is capped at omega * dt <= 1.1 and the
+    tyre gains scale with dt. In a simulation of this loop the car stays
+    stable from 60 fps down to 8 fps.
 
   Gravity at 1 stud = 0.3 m is about 6 g, so grip and acceleration are tuned
   in real-world terms (about 1 g cornering and braking, 0.4 g acceleration,
@@ -334,6 +340,8 @@ The client also calls `RequestStreamAroundAsync` 2.5 s ahead of a moving car.
     persistent landmarks and the prefab library.
 - `build/report.json`: reconstruction statistics and the drivability report.
 - `build/preview_*.png`: offline renders of the parts exactly as placed.
+  `python -m geoblox.preview` reads them back from `world/*.gbw` and the
+  terrain modules, so it also checks that the stored records round-trip.
 
 ## 10. Known limitations and next steps
 

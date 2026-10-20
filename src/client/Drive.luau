@@ -10,6 +10,13 @@
 -- Forces go to VectorForces at the mounts, which the physics integrates
 -- between frames.
 --
+-- Forces are set once per frame but integrated at 240 Hz, so a plain spring
+-- goes unstable below ~25 fps. The suspension force is therefore the
+-- backward-Euler solution over the frame time, gravity included (static sag
+-- stays exact). Stiffness is limited so omega * dt <= 1.1, and tyre gains
+-- scale with dt. Simulated stable from 60 fps down to 8 fps (it sinks onto
+-- the chassis instead of bouncing).
+--
 -- Inputs come from the VehicleSeat (WASD/arrows, gamepad, touch thumbstick);
 -- LeftShift or ButtonB is the handbrake.
 
@@ -94,12 +101,15 @@ local function control(model: Model, seat: VehicleSeat)
 			stop()
 			return
 		end
-		dt = math.clamp(dt, 1 / 240, 1 / 30)
+		local h = math.clamp(dt, 1 / 240, 1 / 8)
 		local mass = chassis.AssemblyMass
 		local g = workspace.Gravity
 		local share = mass / 4
-		local k = share * g / C.sag
+		local k = math.min(share * g / C.sag, share * (1.1 / h) ^ 2)
 		local damp = 2 * C.damping * math.sqrt(k * share)
+		local implicit = 1 + h * h * k / share + h * damp / share
+		local slip = math.min(1 / 0.06, 0.8 / h) -- per-second tyre gains, capped by frame time
+		local stopGain = math.min(1 / 0.08, 0.8 / h)
 		local cf = chassis.CFrame
 		local up = cf.UpVector
 		local fwd = cf.LookVector
@@ -110,7 +120,7 @@ local function control(model: Model, seat: VehicleSeat)
 			or UserInputService:IsGamepadButtonDown(Enum.UserInputType.Gamepad1, Enum.KeyCode.ButtonB)
 		local frac = math.clamp(math.abs(speed) / C.topSpeed, 0, 1)
 		local lock = C.maxSteer + (C.steerAtSpeed - C.maxSteer) * frac
-		steer += (seat.SteerFloat * lock - steer) * math.min(1, dt * 7)
+		steer += (seat.SteerFloat * lock - steer) * math.min(1, h * 7)
 		local braking = false
 		local maxLen = C.restLength + C.wheelRadius
 		for _, w in wheels do
@@ -121,7 +131,9 @@ local function control(model: Model, seat: VehicleSeat)
 			local force = Vector3.zero
 			if hit then
 				comp = math.max(0, maxLen - (hit.Position - mountW):Dot(-up))
-				local fs = math.max(0, k * comp + damp * (comp - w.comp) / dt)
+				-- Backward Euler over the frame: predicted rise speed, then force.
+				local rise = (-(comp - w.comp) / h + (h / share) * k * comp - h * g * math.max(up.Y, 0)) / implicit
+				local fs = math.clamp(k * comp - (k * h + damp) * rise, 0, 4 * share * g)
 				local n = hit.Normal
 				local f = dir - n * dir:Dot(n)
 				if f.Magnitude > 1e-4 then
@@ -131,18 +143,18 @@ local function control(model: Model, seat: VehicleSeat)
 					local vLong, vLat = v:Dot(f), v:Dot(r)
 					local load = math.clamp(fs / (share * g), 0, 1.8)
 					local grip = (if handbrake and not w.front then C.handbrakeGrip else C.grip) * share * load
-					local fLat = math.clamp(-vLat * share / 0.06, -grip, grip)
+					local fLat = math.clamp(-vLat * share * slip, -grip, grip)
 					local fLong = 0
 					if handbrake and not w.front then
-						fLong = -sign(vLong) * math.min(math.abs(vLong) * share / 0.1, C.brake * share)
+						fLong = -sign(vLong) * math.min(math.abs(vLong) * share * stopGain, C.brake * share)
 					elseif throttle ~= 0 and speed * throttle < -1.5 then
-						fLong = -sign(vLong) * math.min(math.abs(vLong) * share / 0.08, C.brake * share)
+						fLong = -sign(vLong) * math.min(math.abs(vLong) * share * stopGain, C.brake * share)
 						braking = true
 					elseif throttle ~= 0 and not w.front then
 						local power = if throttle > 0 then 1 - frac else 0.45 * (1 - math.clamp(-speed / 35, 0, 1))
 						fLong = throttle * C.accel * (mass / 2) * power
 					elseif math.abs(speed) < 3 then
-						fLong = -vLong * share / 0.12 -- hold on hills when stopped
+						fLong = -vLong * share * math.min(1 / 0.12, 0.8 / h) -- hold on hills when stopped
 					else
 						fLong = -vLong * C.rollResist * share * 0.05
 					end
@@ -160,7 +172,7 @@ local function control(model: Model, seat: VehicleSeat)
 			end
 			w.comp = comp
 			w.force.Force = force
-			w.spin = (w.spin - speed / C.wheelRadius * dt) % (math.pi * 2)
+			w.spin = (w.spin - speed / C.wheelRadius * h) % (math.pi * 2)
 			local drop = if hit then C.restLength - comp else C.restLength
 			w.weld.C0 = CFrame.new(w.x, Car.MOUNT_Y - drop, w.z)
 				* CFrame.Angles(0, if w.front then -steer else 0, 0)
@@ -172,8 +184,8 @@ local function control(model: Model, seat: VehicleSeat)
 		for _, t in tails do
 			t.Color = if braking then Color3.fromRGB(255, 30, 30) else Color3.fromRGB(150, 10, 10)
 		end
-		for _, h in heads do
-			h.Enabled = Drive.headlights
+		for _, lamp in heads do
+			lamp.Enabled = Drive.headlights
 		end
 		Drive.speed = speed
 	end)

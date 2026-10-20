@@ -98,7 +98,7 @@ VIEWS = {
     "westminster": ((530620, 179480, 70), (530260, 179640, 40), 62),
     "bridge_street": ((530470, 179668, 11.8), (530250, 179655, 30), 70),
     "whitehall": ((530175, 179880, 6.5), (530130, 180250, 14), 70),
-    "parliament_sq": ((529990, 179500, 22), (530200, 179680, 30), 68),
+    "parliament_sq": ((530020, 179700, 24), (530255, 179600, 34), 64),
     "trafalgar": ((530120, 180250, 40), (529990, 180460, 18), 62),
     "south_bank": ((530860, 179560, 60), (530580, 179980, 50), 62),
 }
@@ -127,3 +127,56 @@ def render_views(meshes: list, names=None, size=(1600, 900), prefix: str = "prev
         out.append(path)
         print("rendered", name, flush=True)
     return out
+
+
+def terrain_from_modules(path, region) -> dict:
+    """Terrain columns back from the generated Luau modules."""
+    import base64
+    import re
+    import struct
+
+    import zstandard
+
+    from .export import TERRAIN_SCALE
+
+    chunks = []
+    for f in sorted(path.glob("*.luau")):
+        payload = re.search(r"\[==\[(.*)\]==\]", f.read_text(), re.S).group(1)
+        blob = zstandard.ZstdDecompressor().decompress(base64.b64decode(payload), max_output_size=1 << 26)
+        x0, z0, nx, nz = struct.unpack("<iiHH", blob[6:18])
+        rec = np.frombuffer(blob[18:], dtype=[("h", "<u2"), ("m", "u1"), ("w", "<u2")]).reshape(nx, nz)
+        chunks.append((x0, z0, rec))
+    X0 = min(c[0] for c in chunks)
+    Z0 = min(c[1] for c in chunks)
+    X1 = max(c[0] + c[2].shape[0] * 4 for c in chunks)
+    Z1 = max(c[1] + c[2].shape[1] * 4 for c in chunks)
+    nx, nz = (X1 - X0) // 4, (Z1 - Z0) // 4
+    h = np.zeros((nx, nz))
+    m = np.zeros((nx, nz), dtype=np.uint8)
+    w = np.full((nx, nz), np.nan)
+    for x0, z0, rec in chunks:
+        i, j = (x0 - X0) // 4, (z0 - Z0) // 4
+        a, b = rec.shape
+        h[i : i + a, j : j + b] = rec["h"] / TERRAIN_SCALE * PARAMS.metres_per_stud + PARAMS.h0
+        m[i : i + a, j : j + b] = rec["m"]
+        ww = rec["w"].astype(np.float64)
+        w[i : i + a, j : j + b] = np.where(ww > 0, ww / TERRAIN_SCALE * PARAMS.metres_per_stud + PARAMS.h0, np.nan)
+    return {"x0": X0, "z0": Z0, "nx": nx, "nz": nz, "height": h, "material": m, "water": w}
+
+
+def main() -> None:
+    """Render previews from the compiled world on disk:
+    python -m geoblox.preview [view ...]"""
+    import sys
+
+    from .config import ROOT, WESTMINSTER
+    from .world import read
+
+    world = read(ROOT / "world", WESTMINSTER)
+    cols = terrain_from_modules(ROOT / "src" / "generated_server" / "Terrain", WESTMINSTER)
+    rows = [row for m in world.models for row in m.parts.rows]
+    render_views([parts_mesh(WESTMINSTER, rows), terrain_mesh(cols, WESTMINSTER), tree_mesh(WESTMINSTER, world)], names=sys.argv[1:] or None)
+
+
+if __name__ == "__main__":
+    main()

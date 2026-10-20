@@ -116,3 +116,35 @@ def write(world: World, out_dir: Path) -> list[dict]:
         json.dumps({"materials": MATERIALS, "tags": TAGS, "chunks": index}, indent=1)
     )
     return index
+
+
+def read(out_dir: Path, region: Region) -> World:
+    """Load compiled chunks back (previews, checks). Looks carry what the
+    records store: material, colour, flags, tag, transparency, reflectance."""
+    from .partmap import FLAG_COLLIDE, FLAG_SHADOW, Look, matrix_from_quat
+
+    world = World(region)
+    dctx = zstandard.ZstdDecompressor()
+    e0, n0 = region.origin
+    for path in sorted(out_dir.glob("*.gbw")):
+        raw = dctx.decompress(path.read_bytes(), max_output_size=1 << 31)
+        jl = struct.unpack("<I", raw[4:8])[0]
+        header = json.loads(raw[8 : 8 + jl])
+        o = 8 + jl
+        n = struct.unpack("<I", raw[o : o + 4])[0]
+        rec = np.frombuffer(raw[o + 4 : o + 4 + n * PART_DTYPE.itemsize], dtype=PART_DTYPE)
+        anchor = np.array(header["anchor"], dtype=np.float64)
+        looks: dict = {}
+        for m in header["models"]:
+            cx = anchor[0] * PARAMS.metres_per_stud + e0
+            cz = n0 - anchor[2] * PARAMS.metres_per_stud
+            model = world.model(m["name"], m["kind"], cx, cz, **m["attrs"])
+            model.prefabs = m["prefabs"]
+            for r in rec[m["first"] : m["first"] + m["count"]]:
+                key = (int(r["material"]), tuple(int(v) for v in r["color"]), int(r["flags"]), int(r["tag"]), int(r["transparency"]), int(r["reflectance"]))
+                look = looks.get(key)
+                if look is None:
+                    look = Look(MATERIALS[key[0]], key[1], bool(key[2] & FLAG_COLLIDE), bool(key[2] & FLAG_SHADOW), key[4] / 255, key[5] / 255, TAGS[key[3]])
+                    looks[key] = look
+                model.parts.rows.append((int(r["shape"]), r["pos"].astype(np.float64) + anchor, matrix_from_quat(r["quat"].astype(np.float64)), r["size"].astype(np.float64), look, int(r["extra"])))
+    return world
