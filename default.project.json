@@ -1,0 +1,51 @@
+{
+  "name": "GeoBlox",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "src/shared" }
+    },
+    "ServerScriptService": {
+      "Server": { "$path": "src/server" },
+      "TerrainWorkers": {
+        "$className": "Folder",
+        "Worker1": { "$className": "Actor", "TerrainWorker": { "$path": "src/worker/TerrainWorker.server.luau" } },
+        "Worker2": { "$className": "Actor", "TerrainWorker": { "$path": "src/worker/TerrainWorker.server.luau" } },
+        "Worker3": { "$className": "Actor", "TerrainWorker": { "$path": "src/worker/TerrainWorker.server.luau" } },
+        "Worker4": { "$className": "Actor", "TerrainWorker": { "$path": "src/worker/TerrainWorker.server.luau" } }
+      }
+    },
+    "ServerStorage": {
+      "GeoBlox": {
+        "$className": "Folder",
+        "ChunkDone": { "$className": "BindableEvent" }
+      }
+    },
+    "StarterPlayer": {
+      "$properties": { "CameraMaxZoomDistance": 4000 },
+      "StarterPlayerScripts": {
+        "Client": { "$path": "src/client" }
+      }
+    },
+    "Players": {
+      "$properties": { "CharacterAutoLoads": false }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "GeographicLatitude": 52.1,
+        "ClockTime": 17.2,
+        "GlobalShadows": true,
+        "EnvironmentDiffuseScale": 1,
+        "EnvironmentSpecularScale": 1,
+        "ShadowSoftness": 0.25
+      }
+    },
+    "Workspace": {
+      "$properties": { "StreamingEnabled": false },
+      "Terrain": {
+        "$properties": { "Decoration": true }
+      }
+    }
+  }
+}

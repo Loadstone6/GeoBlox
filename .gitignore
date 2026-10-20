@@ -1,0 +1,3 @@
+*.lock
+sourcemap.json
+build/*.ppm

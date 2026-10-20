@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          mkdir -p "$HOME/bin"
+          cd "$HOME/bin"
+          get() { curl -sSfL -o t.zip "$1" && unzip -oq t.zip && rm t.zip; }
+          get https://github.com/rojo-rbx/rojo/releases/download/v7.4.4/rojo-7.4.4-linux-x86_64.zip
+          get https://github.com/lune-org/lune/releases/download/v0.8.9/lune-0.8.9-linux-x86_64.zip
+          get https://github.com/JohnnyMorganz/StyLua/releases/download/v2.0.2/stylua-linux-x86_64.zip
+          get https://github.com/Kampfkarren/selene/releases/download/0.28.0/selene-0.28.0-linux.zip
+          get https://github.com/JohnnyMorganz/luau-lsp/releases/download/1.53.0/luau-lsp-linux-x86_64.zip
+          curl -sSfL -o globalTypes.d.luau https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/1.53.0/scripts/globalTypes.d.luau
+          chmod +x *
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Format
+        run: stylua --check src tests tools
+
+      - name: Lint
+        run: selene src
+
+      - name: Type check
+        run: |
+          rojo sourcemap default.project.json -o sourcemap.json
+          luau-lsp analyze --sourcemap=sourcemap.json --definitions="$HOME/bin/globalTypes.d.luau" src
+
+      - name: Tests
+        run: lune run tests/run
+
+      - name: Build place
+        run: rojo build default.project.json -o GeoBlox.rbxl
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GeoBlox-place
+          path: GeoBlox.rbxl
