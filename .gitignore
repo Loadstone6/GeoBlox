@@ -1,3 +1,7 @@
 *.lock
 sourcemap.json
 build/*.ppm
+pipeline/cache/
+__pycache__/
+*.pyc
+.pytest_cache/

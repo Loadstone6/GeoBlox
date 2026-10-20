@@ -3,7 +3,11 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Shared": { "$path": "src/shared" }
+      "GeoBlox": {
+        "$className": "Folder",
+        "Shared": { "$path": "src/shared" },
+        "Generated": { "$path": "src/generated" }
+      }
     },
     "ServerScriptService": {
       "Server": { "$path": "src/server" },
@@ -19,10 +23,11 @@
       "GeoBlox": {
         "$className": "Folder",
         "ChunkDone": { "$className": "BindableEvent" }
-      }
+      },
+      "GeoBloxTerrain": { "$path": "src/generated_server/Terrain" }
     },
     "StarterPlayer": {
-      "$properties": { "CameraMaxZoomDistance": 4000 },
+      "$properties": { "CameraMaxZoomDistance": 3000 },
       "StarterPlayerScripts": {
         "Client": { "$path": "src/client" }
       }
@@ -33,12 +38,12 @@
     "Lighting": {
       "$properties": {
         "Technology": "Future",
-        "GeographicLatitude": 52.1,
-        "ClockTime": 17.2,
+        "GeographicLatitude": 51.5,
+        "ClockTime": 18.4,
         "GlobalShadows": true,
         "EnvironmentDiffuseScale": 1,
         "EnvironmentSpecularScale": 1,
-        "ShadowSoftness": 0.25
+        "ShadowSoftness": 0.3
       }
     },
     "Workspace": {

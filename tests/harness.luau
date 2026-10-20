@@ -1,13 +1,12 @@
 --!nocheck
 -- Loads Roblox-style ModuleScripts (require(script.Parent.X)) from disk so the
--- pure world-generation modules can run under Lune.
+-- pure runtime modules can be tested under Lune.
 
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 local roblox = require("@lune/roblox")
 
 local Harness = {}
-
 local cache = {}
 local loadPath
 
@@ -33,10 +32,9 @@ function loadPath(path)
 	if cache[path] ~= nil then
 		return cache[path]
 	end
-	local file = path .. ".luau"
-	local source = fs.readFile(file)
+	local source = fs.readFile(path .. ".luau")
 	local chunk = luau.load(source, {
-		debugName = file,
+		debugName = path,
 		environment = {
 			script = node(path),
 			require = fakeRequire,
@@ -51,8 +49,5 @@ function loadPath(path)
 	return result
 end
 
-function Harness.require(path: string)
-	return loadPath(path)
-end
-
+Harness.require = loadPath
 return Harness

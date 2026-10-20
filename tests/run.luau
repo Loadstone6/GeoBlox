@@ -1,171 +1,134 @@
 --!nocheck
--- Lune test runner for the pure world-generation modules.
--- Usage: lune run tests/run
+-- Lune tests: decode the generated city data with the same Luau parsers the
+-- game uses and check structural invariants.  Usage: lune run tests/run
 
+local fs = require("@lune/fs")
+local serde = require("@lune/serde")
 local Harness = require("./harness")
-local Enum = require("@lune/roblox").Enum
 
-local SRC = "src/shared"
-local Config = Harness.require(SRC .. "/Config")
-local Rng = Harness.require(SRC .. "/Rng")
-local Layout = Harness.require(SRC .. "/Layout")
-local Sampler = Harness.require(SRC .. "/Sampler")
-local SurfaceClass = Harness.require(SRC .. "/SurfaceClass")
+local Codec = Harness.require("src/shared/Codec")
+local ChunkFormat = Harness.require("src/shared/ChunkFormat")
+local TerrainBuild = Harness.require("src/shared/TerrainBuild")
+local Manifest = Harness.require("src/generated/Manifest")
 
-local failures, passed = 0, 0
+local passed, failed = 0, 0
 local function check(name, cond, detail)
 	if cond then
 		passed += 1
 	else
-		failures += 1
-		print("FAIL  " .. name .. (if detail then ("  (" .. tostring(detail) .. ")") else ""))
+		failed += 1
+		print("FAIL  " .. name .. (if detail ~= nil then "  (" .. tostring(detail) .. ")" else ""))
 	end
 end
 
--- Rng: determinism and range
-do
-	local a, b = Rng.new(42), Rng.new(42)
-	local same, inRange = true, true
-	local sum = 0
-	for _ = 1, 10000 do
-		local x, y = a:next(), b:next()
-		same = same and x == y
-		inRange = inRange and x >= 0 and x < 1
-		sum += x
-	end
-	check("rng deterministic", same)
-	check("rng in [0,1)", inRange)
-	check("rng mean ~0.5", math.abs(sum / 10000 - 0.5) < 0.02, sum / 10000)
-	check("hash stable", Rng.hash(1, 2, 3) == Rng.hash(1, 2, 3) and Rng.hash(1, 2, 3) ~= Rng.hash(3, 2, 1))
-	check("hash negative ok", Rng.hash(-5, -7) >= 0)
+local function payload(path)
+	local src = fs.readFile(path)
+	return string.match(src, "%[==%[(.-)%]==%]")
 end
 
--- Layout: deterministic and sane
-local L = Layout.build(Config.SEED)
-do
-	local L2 = Layout.build(Config.SEED)
-	check("layout deterministic: trees", #L.trees == #L2.trees and L.trees[#L.trees].x == L2.trees[#L2.trees].x)
-	check("layout deterministic: farms", #L.farmList == #L2.farmList)
-	check("has farms", #L.farmList >= 5, #L.farmList)
-	check("has trees", #L.trees > 300, #L.trees)
-	check("has herds", #L.herds > 5, #L.herds)
-	for side = 1, 2 do
-		local list = L.parcels[side]
-		local contiguous = true
-		for i = 2, #list do
-			contiguous = contiguous and list[i].s0 == list[i - 1].s1
-		end
-		check("parcels contiguous side " .. side, contiguous)
-		check("parcels cover region side " .. side, list[1].s0 <= Config.X_MIN and list[#list].s1 >= Config.X_MAX)
-	end
-	for _, f in L.farmList do
-		for _, b in f.buildings do
-			local inside = math.abs(b.ls) + b.w / 2 <= f.halfW
-				and b.d - b.dep / 2 > Config.PARCEL_START
-				and b.d + b.dep / 2 < f.depth
-			check("building inside farm " .. f.id .. " " .. b.kind, inside)
-		end
-		check("farm clear of canal " .. f.id, math.abs(f.s - L.canal.s) > 200)
-	end
+local function decode(path)
+	local raw = Codec.base64(payload(path))
+	return buffer.fromstring(serde.decompress("zstd", buffer.tostring(raw)))
 end
 
--- Sampler: every column in the region
-local smp = Sampler.new(L)
+-- Base64 decoder round-trips.
 do
-	local t0 = os.clock()
-	local columns, bad, waterOk, roads = 0, 0, true, 0
-	local minH, maxH = math.huge, -math.huge
-	for x = Config.X_MIN + 2, Config.X_MAX - 2, 4 do
-		for z = Config.Z_MIN + 2, Config.Z_MAX - 2, 4 do
-			local h, cls, water = smp:sample(x, z)
-			columns += 1
-			minH, maxH = math.min(minH, h), math.max(maxH, h)
-			if h < Config.Y_MIN + 4 or h > Config.Y_MAX - 4 or h ~= h then
-				bad += 1
+	local b = Codec.base64("R2VvQmxveA==")
+	check("base64 decode", buffer.tostring(b) == "GeoBlox", buffer.tostring(b))
+end
+
+-- Manifest sanity.
+check("manifest chunks", #Manifest.chunks > 100, #Manifest.chunks)
+check("manifest terrain", #Manifest.terrain > 100, #Manifest.terrain)
+check("manifest groups", #Manifest.groups >= 20)
+check("manifest spawn", Manifest.spawn and #Manifest.spawn == 3)
+check("london eye measured", Manifest.londonEye and Manifest.londonEye.hub ~= nil)
+check("big ben dials", #Manifest.bigBenDials == 4, #Manifest.bigBenDials)
+
+-- Every mesh chunk parses; geometry invariants hold.
+local totalTris, totalTrees, totalProps, totalColl, meshes = 0, 0, 0, 0, 0
+local badIndex, badNormal, bigMesh, badGroup = 0, 0, 0, 0
+for _, c in Manifest.chunks do
+	local b = decode("src/generated/Chunks/" .. c.name .. ".luau")
+	local ok, chunk = pcall(ChunkFormat.parse, b)
+	check("parse " .. c.name, ok, chunk)
+	if ok then
+		check("anchor " .. c.name, math.abs(chunk.ax - c.center[1]) < 0.01 and math.abs(chunk.az - c.center[3]) < 0.01)
+		for _, m in chunk.meshes do
+			meshes += 1
+			totalTris += m.ntris
+			if m.nverts > 60000 or m.ntris > 20000 then
+				bigMesh += 1
 			end
-			if cls == SurfaceClass.Road then
-				roads += 1
+			if m.group < 0 or m.group >= #Manifest.groups then
+				badGroup += 1
 			end
-			if water > 0 and h > water + 2.5 then
-				waterOk = false
+			for t = 0, m.ntris - 1 do
+				local o = m.indexOffset + t * 6
+				for k = 0, 2 do
+					if buffer.readu16(b, o + k * 2) >= m.nverts then
+						badIndex += 1
+					end
+				end
 			end
-		end
-	end
-	local dt = os.clock() - t0
-	check("heights within voxel band", bad == 0, string.format("%d bad, range %.1f..%.1f", bad, minH, maxH))
-	check("water only over low ground", waterOk)
-	check("road present", roads > 2000, roads)
-	print(
-		string.format(
-			"sampled %d columns in %.2fs (%.2f us/column), height %.1f..%.1f",
-			columns,
-			dt,
-			dt / columns * 1e6,
-			minH,
-			maxH
-		)
-	)
-end
-
--- Road centre is road, spawn is on the road
-do
-	local x, z = Layout.toWorld(Config.SPAWN_S, 1, 0)
-	local h, cls = smp:sample(x, z)
-	check("spawn on road", cls == SurfaceClass.Road and h == Config.ROAD_Y, cls)
-	local hx, hz = Layout.toWorld(0, 2, 25)
-	local _, ditchCls, water = smp:sample(hx, hz)
-	check("roadside ditch has water", water > 0 or ditchCls == SurfaceClass.Track or ditchCls == SurfaceClass.Drive)
-end
-
--- Terrain chunk voxel arrays (uses Lune's Roblox datatypes for Enum/Region3)
-do
-	local TerrainChunk = Harness.require(SRC .. "/TerrainChunk")
-	local NY = (Config.Y_MAX - Config.Y_MIN) // Config.VOXEL
-	local cx, cz = 4, -1 -- contains the canal, road, ditches and the mill
-	local _, mats, occs = TerrainChunk.compute(cx, cz)
-	check("chunk x size", #mats == 64 and #occs == 64)
-	check("chunk y size", #mats[1] == NY, #mats[1])
-	check("chunk z size", #mats[1][1] == 64)
-	local okOcc, water, air, solid = true, 0, 0, 0
-	for i = 1, 64 do
-		for j = 1, NY do
-			for k = 1, 64 do
-				local o, m = occs[i][j][k], mats[i][j][k]
-				okOcc = okOcc and o >= 0 and o <= 1
-				if m == Enum.Material.Water then
-					water += 1
-				elseif m == Enum.Material.Air then
-					air += 1
-				else
-					solid += 1
+			for i = 0, math.min(m.nverts, 64) - 1 do
+				local _, _, _, nx, ny, nz = ChunkFormat.vertex(b, m.vertexOffset + i * 16)
+				local len = math.sqrt(nx * nx + ny * ny + nz * nz)
+				if len < 0.9 or len > 1.1 then
+					badNormal += 1
 				end
 			end
 		end
+		totalTrees += #chunk.trees
+		totalProps += #chunk.props
+		totalColl += #chunk.colls
 	end
-	check("occupancy in [0,1]", okOcc)
-	check("chunk has water", water > 500, water)
-	check("chunk has solid ground", solid > 64 * 64 * 5, solid)
-	local t0 = os.clock()
-	local n = 0
-	for x = Config.CHUNK_X0, Config.CHUNK_X0 + 3 do
-		for z = Config.CHUNK_Z0, Config.CHUNK_Z1 do
-			TerrainChunk.compute(x, z)
-			n += 1
+end
+check("indices in range", badIndex == 0, badIndex)
+check("unit normals", badNormal == 0, badNormal)
+check("EditableMesh caps respected", bigMesh == 0, bigMesh)
+check("group ids valid", badGroup == 0, badGroup)
+check("trees present", totalTrees > 1000, totalTrees)
+check("props present", totalProps > 500, totalProps)
+check("collision present", totalColl > 1000, totalColl)
+print(
+	string.format(
+		"meshes %d, triangles %d, trees %d, props %d, collision boxes %d",
+		meshes,
+		totalTris,
+		totalTrees,
+		totalProps,
+		totalColl
+	)
+)
+
+-- Terrain chunks decode and voxelise.
+local waterCols, landCols = 0, 0
+for i, t in Manifest.terrain do
+	local blob = ChunkFormat.parseTerrain(decode("src/generated_server/Terrain/" .. t.name .. ".luau"))
+	check("terrain origin " .. t.name, blob.x0 == t.x0 and blob.z0 == t.z0)
+	for ix = 0, blob.nx - 1, 8 do
+		for iz = 0, blob.nz - 1, 8 do
+			local h, m, w = ChunkFormat.column(blob, ix, iz)
+			if w > 0 then
+				waterCols += 1
+				check("water above bed", w > h, string.format("%s %d,%d", t.name, ix, iz))
+			else
+				landCols += 1
+			end
+			check("material code", m >= 0 and m <= 12, m)
 		end
 	end
-	local per = (os.clock() - t0) / n
-	local total = (Config.CHUNK_X1 - Config.CHUNK_X0 + 1) * (Config.CHUNK_Z1 - Config.CHUNK_Z0 + 1)
-	print(
-		string.format(
-			"terrain compute: %.1f ms/chunk (Lune, no native codegen) -> ~%.1fs serial for %d chunks",
-			per * 1000,
-			per * total,
-			total
-		)
-	)
+	if i == 1 then
+		local region, mats, occs = TerrainBuild.voxels(blob)
+		check("voxel region", region ~= nil)
+		check("voxel dims", #mats == blob.nx and #mats[1][1] == blob.nz)
+	end
 end
+check("thames present", waterCols > 500, waterCols)
+print(string.format("terrain sample: %d land, %d water columns", landCols, waterCols))
 
-print(string.format("%d passed, %d failed", passed, failures))
-if failures > 0 then
+print(string.format("%d passed, %d failed", passed, failed))
+if failed > 0 then
 	error("tests failed")
 end

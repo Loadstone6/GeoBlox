@@ -1,15 +1,13 @@
 --!strict
--- Time of day, weather and season. Lighting is driven by keyframes tuned for
--- a Dutch sky (soft light, long golden hours, high cloud cover), blended with
--- the current weather. Also spins windmill sails and turbine rotors with the wind.
+-- Time of day and weather tuned for London (latitude 51.5°): soft, often
+-- overcast light, long golden hours in summer, haze over the river. At night
+-- the reconstruction lights up: window_lit meshes, shopfronts, lamp lanterns,
+-- Big Ben's dials and blinking Belisha beacons.
 
-local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Materials = require(Shared.Materials)
+local Sky = {}
 
 local rgb = Color3.fromRGB
 
@@ -20,238 +18,227 @@ type Key = {
 	outdoor: Color3,
 	shift: Color3,
 	exposure: number,
-	atmoColor: Color3,
-	atmoDecay: Color3,
+	atmo: Color3,
+	decay: Color3,
 	density: number,
 	haze: number,
 	glare: number,
 	tint: Color3,
-	saturation: number,
+	sat: number,
 	contrast: number,
 	bloom: number,
-	rays: number,
 }
 
 local KEYS: { Key } = {
 	{
 		t = 0,
-		brightness = 0.5,
-		ambient = rgb(22, 26, 42),
-		outdoor = rgb(42, 52, 78),
+		brightness = 0.35,
+		ambient = rgb(28, 32, 50),
+		outdoor = rgb(46, 54, 82),
 		shift = rgb(0, 0, 0),
-		exposure = -0.2,
-		atmoColor = rgb(60, 70, 96),
-		atmoDecay = rgb(30, 36, 56),
-		density = 0.32,
-		haze = 1.4,
-		glare = 0,
-		tint = rgb(200, 212, 255),
-		saturation = -0.15,
-		contrast = 0.05,
-		bloom = 0.3,
-		rays = 0,
-	},
-	{
-		t = 5.4,
-		brightness = 1.4,
-		ambient = rgb(70, 66, 78),
-		outdoor = rgb(112, 106, 122),
-		shift = rgb(255, 160, 110),
-		exposure = 0.1,
-		atmoColor = rgb(204, 172, 172),
-		atmoDecay = rgb(122, 100, 122),
-		density = 0.36,
-		haze = 2.2,
-		glare = 0.6,
-		tint = rgb(255, 236, 222),
-		saturation = 0,
-		contrast = 0.05,
-		bloom = 0.5,
-		rays = 0.15,
-	},
-	{
-		t = 8,
-		brightness = 2.6,
-		ambient = rgb(94, 100, 110),
-		outdoor = rgb(134, 140, 150),
-		shift = rgb(255, 236, 212),
-		exposure = 0,
-		atmoColor = rgb(199, 210, 225),
-		atmoDecay = rgb(110, 126, 150),
-		density = 0.3,
+		exposure = 0.2,
+		atmo = rgb(62, 70, 98),
+		decay = rgb(40, 40, 60),
+		density = 0.34,
 		haze = 1.6,
-		glare = 0.2,
-		tint = rgb(255, 250, 246),
-		saturation = 0.05,
+		glare = 0,
+		tint = rgb(214, 220, 255),
+		sat = -0.1,
+		contrast = 0.06,
+		bloom = 0.9,
+	},
+	{
+		t = 5.6,
+		brightness = 1.3,
+		ambient = rgb(72, 70, 84),
+		outdoor = rgb(112, 108, 126),
+		shift = rgb(255, 168, 120),
+		exposure = 0.1,
+		atmo = rgb(204, 178, 178),
+		decay = rgb(120, 104, 124),
+		density = 0.38,
+		haze = 2.4,
+		glare = 0.5,
+		tint = rgb(255, 238, 226),
+		sat = 0,
+		contrast = 0.06,
+		bloom = 0.55,
+	},
+	{
+		t = 8.5,
+		brightness = 2.4,
+		ambient = rgb(92, 98, 110),
+		outdoor = rgb(132, 138, 150),
+		shift = rgb(255, 238, 216),
+		exposure = 0,
+		atmo = rgb(196, 206, 220),
+		decay = rgb(112, 126, 148),
+		density = 0.33,
+		haze = 1.9,
+		glare = 0.15,
+		tint = rgb(255, 252, 248),
+		sat = 0.04,
 		contrast = 0.08,
 		bloom = 0.35,
-		rays = 0.08,
 	},
 	{
 		t = 13,
-		brightness = 3,
-		ambient = rgb(100, 106, 116),
+		brightness = 2.8,
+		ambient = rgb(98, 104, 116),
 		outdoor = rgb(140, 146, 156),
-		shift = rgb(255, 250, 240),
+		shift = rgb(255, 250, 242),
 		exposure = 0,
-		atmoColor = rgb(199, 214, 234),
-		atmoDecay = rgb(106, 130, 160),
-		density = 0.28,
-		haze = 1.2,
+		atmo = rgb(198, 210, 228),
+		decay = rgb(108, 130, 158),
+		density = 0.31,
+		haze = 1.6,
 		glare = 0.1,
 		tint = rgb(255, 255, 255),
-		saturation = 0.08,
-		contrast = 0.1,
+		sat = 0.06,
+		contrast = 0.09,
 		bloom = 0.3,
-		rays = 0.05,
 	},
 	{
-		t = 17.6,
-		brightness = 2.4,
-		ambient = rgb(106, 96, 90),
-		outdoor = rgb(150, 136, 126),
-		shift = rgb(255, 202, 142),
+		t = 17.8,
+		brightness = 2.2,
+		ambient = rgb(104, 96, 92),
+		outdoor = rgb(148, 136, 128),
+		shift = rgb(255, 204, 148),
 		exposure = 0.05,
-		atmoColor = rgb(230, 200, 170),
-		atmoDecay = rgb(140, 112, 100),
-		density = 0.32,
-		haze = 2,
-		glare = 0.5,
-		tint = rgb(255, 240, 222),
-		saturation = 0.1,
+		atmo = rgb(226, 200, 176),
+		decay = rgb(138, 114, 104),
+		density = 0.35,
+		haze = 2.2,
+		glare = 0.45,
+		tint = rgb(255, 242, 226),
+		sat = 0.08,
 		contrast = 0.1,
 		bloom = 0.45,
-		rays = 0.12,
 	},
 	{
-		t = 19.8,
-		brightness = 1.6,
-		ambient = rgb(90, 70, 76),
-		outdoor = rgb(140, 106, 106),
-		shift = rgb(255, 140, 80),
+		t = 20.2,
+		brightness = 1.4,
+		ambient = rgb(86, 70, 78),
+		outdoor = rgb(136, 106, 108),
+		shift = rgb(255, 144, 86),
 		exposure = 0.15,
-		atmoColor = rgb(240, 170, 140),
-		atmoDecay = rgb(150, 90, 90),
-		density = 0.36,
-		haze = 2.6,
-		glare = 1.2,
-		tint = rgb(255, 226, 206),
-		saturation = 0.05,
+		atmo = rgb(236, 170, 142),
+		decay = rgb(146, 92, 94),
+		density = 0.38,
+		haze = 2.7,
+		glare = 1.0,
+		tint = rgb(255, 228, 210),
+		sat = 0.04,
 		contrast = 0.08,
-		bloom = 0.6,
-		rays = 0.2,
+		bloom = 0.65,
 	},
 	{
-		t = 21.4,
-		brightness = 0.9,
-		ambient = rgb(44, 44, 66),
-		outdoor = rgb(70, 72, 100),
+		t = 21.6,
+		brightness = 0.7,
+		ambient = rgb(46, 46, 70),
+		outdoor = rgb(72, 74, 104),
 		shift = rgb(120, 90, 110),
-		exposure = -0.1,
-		atmoColor = rgb(110, 106, 140),
-		atmoDecay = rgb(60, 56, 90),
-		density = 0.34,
-		haze = 2,
+		exposure = 0.1,
+		atmo = rgb(108, 104, 138),
+		decay = rgb(58, 54, 90),
+		density = 0.36,
+		haze = 2.1,
 		glare = 0.2,
-		tint = rgb(222, 222, 255),
-		saturation = -0.05,
-		contrast = 0.05,
-		bloom = 0.4,
-		rays = 0.05,
+		tint = rgb(226, 226, 255),
+		sat = -0.04,
+		contrast = 0.06,
+		bloom = 0.8,
 	},
 }
 
 type Weather = {
 	name: string,
 	cover: number,
-	cloudDensity: number,
-	light: number, -- brightness multiplier
-	sun: number, -- how much sun colour/shift survives
-	density: number, -- added atmosphere density
-	haze: number, -- added haze
-	saturation: number,
+	density: number,
+	light: number,
+	sun: number,
+	fog: number,
+	haze: number,
+	sat: number,
 	wind: Vector3,
 	rain: number,
-	softness: number,
+	soft: number,
 }
-
 local WEATHERS: { Weather } = {
 	{
+		name = "Overcast",
+		cover = 0.86,
+		density = 0.72,
+		light = 0.66,
+		sun = 0.3,
+		fog = 0.04,
+		haze = 0.8,
+		sat = -0.08,
+		wind = Vector3.new(14, 0, 6),
+		rain = 0,
+		soft = 0.9,
+	},
+	{
+		name = "Bright intervals",
+		cover = 0.62,
+		density = 0.6,
+		light = 0.95,
+		sun = 0.95,
+		fog = 0.0,
+		haze = 0.2,
+		sat = 0,
+		wind = Vector3.new(10, 0, 5),
+		rain = 0,
+		soft = 0.3,
+	},
+	{
 		name = "Clear",
-		cover = 0.4,
-		cloudDensity = 0.5,
-		light = 1,
-		sun = 1,
-		density = 0,
+		cover = 0.35,
+		density = 0.5,
+		light = 1.0,
+		sun = 1.0,
+		fog = -0.02,
 		haze = 0,
-		saturation = 0,
+		sat = 0.02,
 		wind = Vector3.new(6, 0, 3),
 		rain = 0,
-		softness = 0.2,
+		soft = 0.2,
 	},
 	{
-		name = "Broken clouds",
-		cover = 0.64,
-		cloudDensity = 0.62,
-		light = 0.94,
-		sun = 0.9,
-		density = 0.02,
-		haze = 0.3,
-		saturation = 0,
-		wind = Vector3.new(12, 0, 6),
-		rain = 0,
-		softness = 0.3,
-	},
-	{
-		name = "Overcast",
-		cover = 0.9,
-		cloudDensity = 0.78,
-		light = 0.62,
-		sun = 0.25,
-		density = 0.06,
-		haze = 1,
-		saturation = -0.12,
-		wind = Vector3.new(16, 0, 7),
-		rain = 0,
-		softness = 0.9,
-	},
-	{
-		name = "Mist",
-		cover = 0.72,
-		cloudDensity = 0.5,
-		light = 0.72,
-		sun = 0.5,
-		density = 0.26,
-		haze = 2.4,
-		saturation = -0.08,
+		name = "River mist",
+		cover = 0.7,
+		density = 0.5,
+		light = 0.7,
+		sun = 0.45,
+		fog = 0.24,
+		haze = 2.6,
+		sat = -0.1,
 		wind = Vector3.new(2, 0, 1),
 		rain = 0,
-		softness = 0.7,
+		soft = 0.7,
 	},
 	{
-		name = "Rain",
-		cover = 0.96,
-		cloudDensity = 0.88,
-		light = 0.48,
+		name = "Drizzle",
+		cover = 0.95,
+		density = 0.86,
+		light = 0.5,
 		sun = 0.15,
-		density = 0.12,
-		haze = 2,
-		saturation = -0.2,
-		wind = Vector3.new(24, 0, 9),
+		fog = 0.1,
+		haze = 1.8,
+		sat = -0.18,
+		wind = Vector3.new(18, 0, 7),
 		rain = 1,
-		softness = 1,
+		soft = 1,
 	},
 }
 
-local Sky = {}
-
-local clock = 17.2
+local clock = 18.4
 local paused = false
-local hoursPerSecond = 1 / 120 -- one game hour per two real minutes
+local hoursPerSecond = 1 / 90
 local weatherIdx = 2
-local blend: Weather = table.clone(WEATHERS[weatherIdx])
-local seasonIdx = 1
-local seasonListeners: { (string) -> () } = {}
+local w: Weather = table.clone(WEATHERS[weatherIdx])
+local nightListeners: { (boolean) -> () } = {}
+local isNight = false
 
 local function lerp(a: number, b: number, t: number): number
 	return a + (b - a) * t
@@ -260,51 +247,12 @@ end
 local function sample(t: number): (Key, Key, number)
 	for i = #KEYS, 1, -1 do
 		if t >= KEYS[i].t then
-			local a = KEYS[i]
-			local b = KEYS[i % #KEYS + 1]
+			local a, b = KEYS[i], KEYS[i % #KEYS + 1]
 			local span = (b.t - a.t) % 24
-			if span == 0 then
-				span = 24
-			end
-			return a, b, ((t - a.t) % 24) / span
+			return a, b, ((t - a.t) % 24) / (if span == 0 then 24 else span)
 		end
 	end
 	return KEYS[1], KEYS[2], 0
-end
-
-local function blendWeather(dt: number)
-	local target = WEATHERS[weatherIdx]
-	local k = math.min(1, dt * 0.15)
-	for _, field in { "cover", "cloudDensity", "light", "sun", "density", "haze", "saturation", "rain", "softness" } do
-		(blend :: any)[field] = lerp((blend :: any)[field], (target :: any)[field], k)
-	end
-	blend.wind = blend.wind:Lerp(target.wind, k)
-	blend.name = target.name
-end
-
-local function makeRain(): (BasePart, ParticleEmitter)
-	local part = Instance.new("Part")
-	part.Name = "RainEmitter"
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.Transparency = 1
-	part.Size = Vector3.new(160, 1, 160)
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Rate = 0
-	emitter.Lifetime = NumberRange.new(1.2, 1.6)
-	emitter.Speed = NumberRange.new(90, 110)
-	emitter.EmissionDirection = Enum.NormalId.Bottom
-	emitter.Size = NumberSequence.new(0.12)
-	emitter.Squash = NumberSequence.new(4)
-	emitter.Orientation = Enum.ParticleOrientation.VelocityParallel
-	emitter.Color = ColorSequence.new(rgb(196, 206, 216))
-	emitter.Transparency = NumberSequence.new(0.45)
-	emitter.LightInfluence = 1
-	emitter.Parent = part
-	part.Parent = workspace
-	return part, emitter
 end
 
 function Sky.addHours(h: number)
@@ -321,37 +269,16 @@ function Sky.nextWeather(): string
 	return WEATHERS[weatherIdx].name
 end
 
-function Sky.nextSeason(): string
-	seasonIdx = seasonIdx % #Materials.SEASONS + 1
-	local name = Materials.SEASONS[seasonIdx]
-	Materials.applyTerrain(workspace.Terrain, name)
-	local palette = Materials.PALETTES[name]
-	for _, p in CollectionService:GetTagged("GeoBloxHorizonField") do
-		local idx = p:GetAttribute("HorizonIdx")
-		if p:IsA("BasePart") and typeof(idx) == "number" then
-			p.Color = palette.horizon[idx]
-		end
-	end
-	for _, p in CollectionService:GetTagged("GeoBloxHorizonTrees") do
-		if p:IsA("BasePart") then
-			p.Color = if name == "Winter"
-				then rgb(92, 84, 76)
-				elseif name == "Autumn" then rgb(126, 104, 56)
-				else rgb(56, 82, 46)
-		end
-	end
-	for _, fn in seasonListeners do
-		fn(name)
-	end
-	return name
+function Sky.onNight(fn: (boolean) -> ())
+	table.insert(nightListeners, fn)
 end
 
-function Sky.onSeason(fn: (string) -> ())
-	table.insert(seasonListeners, fn)
+function Sky.status(): (number, string, boolean)
+	return clock, WEATHERS[weatherIdx].name, paused
 end
 
-function Sky.status(): (number, string, string, boolean)
-	return clock, blend.name, Materials.SEASONS[seasonIdx], paused
+function Sky.isNight(): boolean
+	return isNight
 end
 
 function Sky.start()
@@ -360,77 +287,70 @@ function Sky.start()
 	local bloom = Lighting:WaitForChild("Bloom") :: BloomEffect
 	local rays = Lighting:WaitForChild("SunRays") :: SunRaysEffect
 	local clouds = workspace.Terrain:WaitForChild("Clouds") :: Clouds
-	local rainPart, rain = makeRain()
-	Materials.applyTerrain(workspace.Terrain, Materials.SEASONS[seasonIdx])
 
-	type Rotor = { model: Model, hub: Vector3, axis: Vector3, speed: number, base: CFrame, angle: number }
-	local rotors: { [Model]: Rotor } = {}
-	local function addRotor(inst: Instance)
-		if not inst:IsA("Model") then
-			return
-		end
-		local hub, axis, speed = inst:GetAttribute("Hub"), inst:GetAttribute("Axis"), inst:GetAttribute("Speed")
-		if typeof(hub) == "Vector3" and typeof(axis) == "Vector3" and typeof(speed) == "number" then
-			rotors[inst] = {
-				model = inst,
-				hub = hub,
-				axis = axis.Unit,
-				speed = speed,
-				base = CFrame.new(hub):Inverse() * inst:GetPivot(),
-				angle = 0,
-			}
-		end
-	end
-	CollectionService:GetInstanceAddedSignal("GeoBloxRotor"):Connect(addRotor)
-	for _, inst in CollectionService:GetTagged("GeoBloxRotor") do
-		addRotor(inst)
-	end
+	local rainPart = Instance.new("Part")
+	rainPart.Anchored = true
+	rainPart.CanCollide = false
+	rainPart.CanQuery = false
+	rainPart.CanTouch = false
+	rainPart.Transparency = 1
+	rainPart.Size = Vector3.new(180, 1, 180)
+	local rain = Instance.new("ParticleEmitter")
+	rain.Rate = 0
+	rain.Lifetime = NumberRange.new(1.2, 1.6)
+	rain.Speed = NumberRange.new(80, 100)
+	rain.EmissionDirection = Enum.NormalId.Bottom
+	rain.Size = NumberSequence.new(0.1)
+	rain.Squash = NumberSequence.new(4)
+	rain.Orientation = Enum.ParticleOrientation.VelocityParallel
+	rain.Color = ColorSequence.new(rgb(196, 206, 216))
+	rain.Transparency = NumberSequence.new(0.5)
+	rain.Parent = rainPart
+	rainPart.Parent = workspace
 
 	RunService.RenderStepped:Connect(function(dt: number)
 		if not paused then
 			clock = (clock + dt * hoursPerSecond) % 24
 		end
-		blendWeather(dt)
+		local target = WEATHERS[weatherIdx]
+		local k = math.min(1, dt * 0.2)
+		for _, f in { "cover", "density", "light", "sun", "fog", "haze", "sat", "rain", "soft" } do
+			(w :: any)[f] = lerp((w :: any)[f], (target :: any)[f], k)
+		end
+		w.wind = w.wind:Lerp(target.wind, k)
 		local a, b, t = sample(clock)
-		local w = blend
-
 		Lighting.ClockTime = clock
 		Lighting.Brightness = lerp(a.brightness, b.brightness, t) * w.light
 		Lighting.Ambient = a.ambient:Lerp(b.ambient, t)
 		Lighting.OutdoorAmbient = a.outdoor:Lerp(b.outdoor, t)
-		local shift = a.shift:Lerp(b.shift, t)
-		Lighting.ColorShift_Top = Color3.new(0, 0, 0):Lerp(shift, w.sun)
+		Lighting.ColorShift_Top = Color3.new():Lerp(a.shift:Lerp(b.shift, t), w.sun)
 		Lighting.ExposureCompensation = lerp(a.exposure, b.exposure, t)
-		Lighting.ShadowSoftness = w.softness
-
-		local overcastGrey = rgb(176, 182, 190)
-		atmosphere.Color = a.atmoColor:Lerp(b.atmoColor, t):Lerp(overcastGrey, (1 - w.sun) * 0.6)
-		atmosphere.Decay = a.atmoDecay:Lerp(b.atmoDecay, t)
-		atmosphere.Density = math.clamp(lerp(a.density, b.density, t) + w.density, 0, 1)
+		Lighting.ShadowSoftness = w.soft
+		atmosphere.Color = a.atmo:Lerp(b.atmo, t):Lerp(rgb(178, 184, 192), (1 - w.sun) * 0.55)
+		atmosphere.Decay = a.decay:Lerp(b.decay, t)
+		atmosphere.Density = math.clamp(lerp(a.density, b.density, t) + w.fog, 0, 1)
 		atmosphere.Haze = lerp(a.haze, b.haze, t) + w.haze
 		atmosphere.Glare = lerp(a.glare, b.glare, t) * w.sun
-
 		grade.TintColor = a.tint:Lerp(b.tint, t)
-		grade.Saturation = lerp(a.saturation, b.saturation, t) + w.saturation
+		grade.Saturation = lerp(a.sat, b.sat, t) + w.sat
 		grade.Contrast = lerp(a.contrast, b.contrast, t)
 		bloom.Intensity = lerp(a.bloom, b.bloom, t)
-		rays.Intensity = lerp(a.rays, b.rays, t) * w.sun
-
+		rays.Intensity = 0.07 * w.sun
 		clouds.Cover = w.cover
-		clouds.Density = w.cloudDensity
+		clouds.Density = w.density
 		workspace.GlobalWind = w.wind
-
-		local camera = workspace.CurrentCamera
-		if camera then
-			local cp = camera.CFrame.Position
-			rainPart.CFrame = CFrame.new(cp + Vector3.new(w.wind.X * 0.8, 70, w.wind.Z * 0.8))
+		local cam = workspace.CurrentCamera
+		if cam then
+			rainPart.CFrame = CFrame.new(cam.CFrame.Position + Vector3.new(w.wind.X * 0.8, 70, w.wind.Z * 0.8))
 		end
-		rain.Rate = w.rain * 1800
+		rain.Rate = w.rain * 1600
 
-		local windFactor = 0.35 + w.wind.Magnitude / 20
-		for _, r in rotors do
-			r.angle += r.speed * windFactor * dt
-			r.model:PivotTo(CFrame.new(r.hub) * CFrame.fromAxisAngle(r.axis, r.angle) * r.base)
+		local night = clock < 6.2 or clock > 20.4
+		if night ~= isNight then
+			isNight = night
+			for _, fn in nightListeners do
+				fn(night)
+			end
 		end
 	end)
 end

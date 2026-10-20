@@ -1,271 +1,353 @@
 --!strict
--- Procedural trees from parts. Each species has a silhouette that reads at a
--- distance: columnar poplars along roads, broad oaks, pollard willows on ditch
--- banks, windbreak alders/ash behind farms, apple trees in orchards.
--- LOD 2 = full crown with shadows, LOD 1 = trunk + simplified crown.
+--!native
+-- Trees from LiDAR crown records: one batched EditableMesh per ~40 trees.
+-- Crowns are clusters of noise-displaced icospheres sized to the measured
+-- crown radius and height; vertex colours darken the underside and the inner
+-- blobs (cheap self-occlusion); LeafyGrass gives leaf texture through UVs.
 
+local AssetService = game:GetService("AssetService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Geometry = require(Shared.Geometry)
-local Layout = require(Shared.Layout)
-local Rng = require(Shared.Rng)
-
-local M = Enum.Material
-local rgb = Color3.fromRGB
-local V3 = Vector3.new
-
-export type Leaf = { part: BasePart, kind: string, idx: number }
+local Shared = ReplicatedStorage:WaitForChild("GeoBlox"):WaitForChild("Shared")
+local ChunkFormat = require(Shared:WaitForChild("ChunkFormat"))
 
 local Trees = {}
 
+local SPM = ChunkFormat.STUDS_PER_METRE
+
+type Geo = { pos: { Vector3 }, nrm: { Vector3 }, col: { Color3 }, uv: { Vector2 }, tri: { number } }
+
+-- Unit icosphere (subdivision s), shared.
+local function icosphere(sub: number): ({ Vector3 }, { number })
+	local t = (1 + math.sqrt(5)) / 2
+	local v: { Vector3 } = {}
+	for _, p in
+		{
+			{ -1, t, 0 },
+			{ 1, t, 0 },
+			{ -1, -t, 0 },
+			{ 1, -t, 0 },
+			{ 0, -1, t },
+			{ 0, 1, t },
+			{ 0, -1, -t },
+			{ 0, 1, -t },
+			{ t, 0, -1 },
+			{ t, 0, 1 },
+			{ -t, 0, -1 },
+			{ -t, 0, 1 },
+		}
+	do
+		table.insert(v, Vector3.new(p[1], p[2], p[3]).Unit)
+	end
+	local f = {
+		1,
+		12,
+		6,
+		1,
+		6,
+		2,
+		1,
+		2,
+		8,
+		1,
+		8,
+		11,
+		1,
+		11,
+		12,
+		2,
+		6,
+		10,
+		6,
+		12,
+		5,
+		12,
+		11,
+		3,
+		11,
+		8,
+		7,
+		8,
+		2,
+		9,
+		4,
+		10,
+		5,
+		4,
+		5,
+		3,
+		4,
+		3,
+		7,
+		4,
+		7,
+		9,
+		4,
+		9,
+		10,
+		5,
+		10,
+		6,
+		3,
+		5,
+		12,
+		7,
+		3,
+		11,
+		9,
+		7,
+		8,
+		10,
+		9,
+		2,
+	}
+	for _ = 1, sub do
+		local cache: { [number]: number } = {}
+		local function mid(a: number, b: number): number
+			local key = if a < b then a * 4096 + b else b * 4096 + a
+			local hit = cache[key]
+			if hit then
+				return hit
+			end
+			table.insert(v, ((v[a] + v[b]) / 2).Unit)
+			cache[key] = #v
+			return #v
+		end
+		local nf = {}
+		for i = 1, #f, 3 do
+			local a, b, c = f[i], f[i + 1], f[i + 2]
+			local ab, bc, ca = mid(a, b), mid(b, c), mid(c, a)
+			for _, x in { a, ab, ca, b, bc, ab, c, ca, bc, ab, bc, ca } do
+				table.insert(nf, x)
+			end
+		end
+		f = nf
+	end
+	return v, f
+end
+
+local ICO1_V, ICO1_F = icosphere(1)
+local ICO0_V, ICO0_F = icosphere(0)
+
+local LEAF = {
+	[0] = { Color3.fromRGB(88, 112, 52), Color3.fromRGB(100, 122, 58), Color3.fromRGB(78, 104, 48) }, -- London plane
+	[1] = { Color3.fromRGB(72, 102, 46), Color3.fromRGB(86, 114, 50), Color3.fromRGB(64, 92, 42) },
+	[2] = { Color3.fromRGB(44, 70, 44), Color3.fromRGB(52, 78, 48), Color3.fromRGB(40, 64, 40) },
+	[3] = { Color3.fromRGB(104, 128, 60), Color3.fromRGB(116, 138, 66), Color3.fromRGB(96, 120, 56) },
+}
 local BARK = {
-	poplar = rgb(118, 112, 102),
-	oak = rgb(76, 66, 56),
-	ash = rgb(104, 100, 92),
-	willow = rgb(92, 84, 70),
-	linden = rgb(82, 74, 64),
-	alder = rgb(70, 64, 58),
-	apple = rgb(88, 74, 60),
-	chestnut = rgb(74, 64, 54),
+	[0] = Color3.fromRGB(150, 140, 112), -- plane: pale mottled
+	[1] = Color3.fromRGB(86, 74, 62),
+	[2] = Color3.fromRGB(80, 62, 50),
+	[3] = Color3.fromRGB(96, 84, 70),
 }
 
-type Shape = {
-	trunkFrac: number, -- trunk height as a fraction of tree height
-	trunkWidth: { number },
-	crownStart: number, -- crown bottom as fraction of height
-	balls: number,
-	spread: number, -- horizontal scatter as fraction of height
-	size: { number }, -- ball diameter range as fraction of height
-	columnar: boolean,
-}
-
-local SHAPES: { [string]: Shape } = {
-	poplar = {
-		trunkFrac = 0.6,
-		trunkWidth = { 2.2, 3 },
-		crownStart = 0.38,
-		balls = 6,
-		spread = 0.07,
-		size = { 0.2, 0.3 },
-		columnar = true,
-	},
-	oak = {
-		trunkFrac = 0.45,
-		trunkWidth = { 3.4, 4.6 },
-		crownStart = 0.42,
-		balls = 8,
-		spread = 0.2,
-		size = { 0.34, 0.46 },
-		columnar = false,
-	},
-	ash = {
-		trunkFrac = 0.5,
-		trunkWidth = { 2.6, 3.4 },
-		crownStart = 0.45,
-		balls = 6,
-		spread = 0.18,
-		size = { 0.3, 0.4 },
-		columnar = false,
-	},
-	linden = {
-		trunkFrac = 0.4,
-		trunkWidth = { 3, 4 },
-		crownStart = 0.35,
-		balls = 7,
-		spread = 0.14,
-		size = { 0.38, 0.5 },
-		columnar = false,
-	},
-	chestnut = {
-		trunkFrac = 0.38,
-		trunkWidth = { 3.2, 4.2 },
-		crownStart = 0.32,
-		balls = 7,
-		spread = 0.15,
-		size = { 0.4, 0.5 },
-		columnar = false,
-	},
-	alder = {
-		trunkFrac = 0.5,
-		trunkWidth = { 2, 2.8 },
-		crownStart = 0.35,
-		balls = 5,
-		spread = 0.08,
-		size = { 0.26, 0.34 },
-		columnar = true,
-	},
-	apple = {
-		trunkFrac = 0.42,
-		trunkWidth = { 1.1, 1.5 },
-		crownStart = 0.4,
-		balls = 4,
-		spread = 0.18,
-		size = { 0.5, 0.65 },
-		columnar = false,
-	},
-}
-
-local function leafBall(
-	parent: Instance,
-	leaves: { Leaf },
-	diameter: number,
-	pos: Vector3,
-	palette: any,
-	idx: number,
-	kind: string,
-	shadow: boolean
+local function blob(
+	g: Geo,
+	center: Vector3,
+	rx: number,
+	ry: number,
+	color: Color3,
+	inner: number,
+	rng: Random,
+	verts: { Vector3 },
+	faces: { number },
+	jitter: number
 )
-	local color = if kind == "willow" then palette.willow else palette.leaves[(idx - 1) % #palette.leaves + 1]
-	local ball = Geometry.ball(parent, diameter, pos, color, M.LeafyGrass)
-	ball.CastShadow = shadow
-	ball.CanCollide = false
-	ball.CanQuery = false
-	if kind ~= "willow" then
-		ball.Transparency = palette.leafTransparency
+	local base = #g.pos
+	local phase = rng:NextNumber() * 10
+	for _, d in verts do
+		-- Low-frequency lumps so crowns are not perfect ellipsoids.
+		local n = 1
+			+ jitter * math.sin(d.X * 3.1 + phase) * math.cos(d.Z * 2.7 - phase)
+			+ jitter * 0.6 * math.sin(d.Y * 4.3 + phase * 2)
+		local p = center + Vector3.new(d.X * rx * n, d.Y * ry * n, d.Z * rx * n)
+		table.insert(g.pos, p)
+		table.insert(g.nrm, d)
+		local shade = (0.62 + 0.38 * (d.Y * 0.5 + 0.5)) * inner
+		table.insert(g.col, Color3.new(color.R * shade, color.G * shade, color.B * shade))
+		table.insert(g.uv, Vector2.new(math.atan2(d.Z, d.X) / math.pi * 3, d.Y * 2.5))
 	end
-	table.insert(leaves, { part = ball :: BasePart, kind = kind, idx = idx })
-end
-
-local function pollardWillow(
-	parent: Instance,
-	tree: Layout.Tree,
-	ground: number,
-	lod: number,
-	palette: any,
-	leaves: { Leaf }
-)
-	local rng = Rng.new(tree.seed)
-	local trunkH = tree.h * 0.5
-	local width = rng:range(3.6, 5)
-	local base = V3(tree.x, ground, tree.z)
-	local lean = CFrame.Angles(rng:range(-0.12, 0.12), rng:range(0, 6.28), rng:range(-0.12, 0.12))
-	local trunkCf = CFrame.new(base) * lean * CFrame.new(0, trunkH / 2 - 0.5, 0)
-	local trunk = Geometry.cylinderAlong(
-		parent,
-		trunkH + 1,
-		width,
-		trunkCf * CFrame.Angles(0, 0, math.pi / 2),
-		BARK.willow,
-		M.Wood
-	)
-	trunk.CastShadow = lod >= 2
-	local top = (trunkCf * CFrame.new(0, trunkH / 2, 0)).Position
-	Geometry.ball(parent, width * 1.5, top, BARK.willow, M.Wood).CastShadow = lod >= 2
-	local count = if lod >= 2 then rng:int(4, 6) else 1
-	for i = 1, count do
-		local off = if lod >= 2
-			then V3(rng:range(-3, 3), rng:range(2, tree.h * 0.4), rng:range(-3, 3))
-			else V3(0, tree.h * 0.25, 0)
-		local d = if lod >= 2 then rng:range(6, 9) else tree.h * 0.55
-		leafBall(parent, leaves, d, top + off, palette, i, "willow", lod >= 2)
+	for _, fi in faces do
+		table.insert(g.tri, base + fi)
 	end
 end
 
-function Trees.build(parent: Instance, tree: Layout.Tree, ground: number, lod: number, palette: any, leaves: { Leaf })
-	if tree.kind == "willow" then
-		pollardWillow(parent, tree, ground, lod, palette, leaves)
+local function trunk(g: Geo, base: Vector3, top: Vector3, r0: number, r1: number, color: Color3)
+	local sides = 6
+	local start = #g.pos
+	local axis = top - base
+	local up = axis.Unit
+	local side = if math.abs(up.Y) < 0.95 then up:Cross(Vector3.yAxis).Unit else Vector3.xAxis
+	local fwd = up:Cross(side).Unit
+	for i = 0, sides - 1 do
+		local a = i / sides * math.pi * 2
+		local dir = side * math.cos(a) + fwd * math.sin(a)
+		table.insert(g.pos, base + dir * r0)
+		table.insert(g.pos, top + dir * r1)
+		table.insert(g.nrm, dir)
+		table.insert(g.nrm, dir)
+		table.insert(g.col, Color3.new(color.R * 0.7, color.G * 0.7, color.B * 0.7))
+		table.insert(g.col, color)
+		table.insert(g.uv, Vector2.new(i / sides * 2, 0))
+		table.insert(g.uv, Vector2.new(i / sides * 2, axis.Magnitude / 4))
+	end
+	for i = 0, sides - 1 do
+		local j = (i + 1) % sides
+		local a0, a1 = start + i * 2 + 1, start + i * 2 + 2
+		local b0, b1 = start + j * 2 + 1, start + j * 2 + 2
+		-- Outward-facing (counter-clockwise seen from outside).
+		for _, x in { a0, b0, b1, a0, b1, a1 } do
+			table.insert(g.tri, x)
+		end
+	end
+end
+
+-- Geometry for one tree at chunk-relative position (studs).
+local function tree(leaves: Geo, wood: Geo, t: ChunkFormat.TreeRec, lod: number)
+	local rng = Random.new(t.seed)
+	local h = t.height * SPM
+	local r = math.max(1.2, t.crown) * SPM
+	local base = Vector3.new(t.x, t.z - 0.5, t.y)
+	local palette = LEAF[t.kind] or LEAF[1]
+	local crownBase = if t.kind == 2 then 0.25 else 0.38
+	local crownMid = base + Vector3.new(0, h * (crownBase + (1 - crownBase) * 0.5), 0)
+	local crownHalfH = h * (1 - crownBase) * 0.5
+	if lod >= 1 then
+		blob(leaves, crownMid, r * 0.95, crownHalfH, palette[1], 1, rng, ICO0_V, ICO0_F, 0.08)
 		return
 	end
-	local shape = SHAPES[tree.kind]
-	local rng = Rng.new(tree.seed)
-	local h = tree.h
-	local base = V3(tree.x, ground, tree.z)
-	local trunkH = h * shape.trunkFrac
-	local width = rng:range(shape.trunkWidth[1], shape.trunkWidth[2])
-	local trunk = Geometry.cylinderAlong(
-		parent,
-		trunkH + 2,
-		width,
-		CFrame.new(base + V3(0, trunkH / 2 - 1, 0)) * CFrame.Angles(0, rng:range(0, 6.28), math.pi / 2),
-		BARK[tree.kind],
-		M.Wood
+	local trunkTop = base + Vector3.new(0, h * (crownBase + 0.12), 0)
+	trunk(
+		wood,
+		base,
+		trunkTop,
+		math.clamp(h * 0.022, 0.6, 2.2),
+		math.clamp(h * 0.014, 0.4, 1.4),
+		BARK[t.kind] or BARK[1]
 	)
-	trunk.CastShadow = lod >= 2
-	trunk.CanQuery = false
-
-	local colorIdx = rng:int(1, 4)
-	if lod < 2 then
-		-- Far LOD: one or two balls that match the silhouette.
-		local crownH = h * (1 - shape.crownStart)
-		if shape.columnar then
-			leafBall(
-				parent,
+	if t.kind == 2 then
+		for k = 0, 3 do
+			local f = k / 3
+			blob(
 				leaves,
-				crownH * 0.55,
-				base + V3(0, h * shape.crownStart + crownH * 0.3, 0),
-				palette,
-				colorIdx,
-				"leaf",
-				false
-			)
-			leafBall(
-				parent,
-				leaves,
-				crownH * 0.45,
-				base + V3(0, h * shape.crownStart + crownH * 0.68, 0),
-				palette,
-				colorIdx,
-				"leaf",
-				false
-			)
-		else
-			leafBall(
-				parent,
-				leaves,
-				h * (shape.size[2] + shape.spread),
-				base + V3(0, h * (shape.crownStart + 0.3), 0),
-				palette,
-				colorIdx,
-				"leaf",
-				false
+				base + Vector3.new(0, h * (0.35 + 0.55 * f), 0),
+				r * (1 - 0.7 * f),
+				crownHalfH * 0.42,
+				palette[1 + k % 3],
+				0.9 + 0.1 * f,
+				rng,
+				ICO1_V,
+				ICO1_F,
+				0.12
 			)
 		end
 		return
 	end
-
-	-- Main limbs give the crown structure when the leaves are thin (winter).
-	if not shape.columnar then
-		for i = 1, 3 do
-			local yaw = i * 2.1 + rng:range(-0.4, 0.4)
-			local len = h * rng:range(0.22, 0.3)
-			local from = base + V3(0, trunkH * 0.9, 0)
-			local dir = (CFrame.Angles(0, yaw, 0) * CFrame.Angles(rng:range(0.5, 0.9), 0, 0)).LookVector
-			local to = from + dir * len + V3(0, len * 0.5, 0)
-			local limb = Geometry.block(
-				parent,
-				V3(width * 0.45, width * 0.45, (to - from).Magnitude),
-				CFrame.lookAt((from + to) / 2, to),
-				BARK[tree.kind],
-				M.Wood
-			)
-			limb.CanQuery = false
+	-- Main limbs towards the blob centres, then blobs.
+	local n = if t.kind == 3 then 2 else rng:NextInteger(4, 6)
+	for k = 1, n do
+		local a = (k / n) * math.pi * 2 + rng:NextNumber() * 0.8
+		local spread = r * (if k == 1 then 0.1 else 0.45)
+		local c = crownMid
+			+ Vector3.new(math.cos(a) * spread, (rng:NextNumber() - 0.35) * crownHalfH * 0.6, math.sin(a) * spread)
+		if k > 1 then
+			trunk(wood, trunkTop, trunkTop:Lerp(c, 0.7), math.clamp(h * 0.01, 0.3, 0.9), 0.25, BARK[t.kind] or BARK[1])
 		end
-	end
-
-	for i = 1, shape.balls do
-		local t = (i - 1) / math.max(1, shape.balls - 1)
-		local y, size
-		if shape.columnar then
-			y = h * (shape.crownStart + 0.08 + t * (0.9 - shape.crownStart))
-			size = h * rng:range(shape.size[1], shape.size[2]) * (1.15 - t * 0.5)
-		else
-			y = h * (shape.crownStart + 0.22 + rng:range(-0.1, 0.18))
-			size = h * rng:range(shape.size[1], shape.size[2])
-		end
-		local spread = h * shape.spread
-		local off = V3(rng:range(-spread, spread), 0, rng:range(-spread, spread))
-		leafBall(
-			parent,
+		local inner = if k == 1 then 0.82 else 1.0
+		blob(
 			leaves,
-			size,
-			base + off + V3(0, y, 0),
-			palette,
-			colorIdx + (if rng:chance(0.3) then 1 else 0),
-			"leaf",
-			true
+			c,
+			r * (0.6 + 0.15 * rng:NextNumber()),
+			crownHalfH * (0.62 + 0.15 * rng:NextNumber()),
+			palette[1 + k % 3],
+			inner,
+			rng,
+			ICO1_V,
+			ICO1_F,
+			0.14
 		)
 	end
+end
+
+local function toMesh(g: Geo, material: Enum.Material, origin: Vector3, shadow: boolean): MeshPart?
+	if #g.tri == 0 then
+		return nil
+	end
+	local ok, em = pcall(function()
+		return AssetService:CreateEditableMesh()
+	end)
+	if not ok or em == nil then
+		return nil
+	end
+	local mesh = em :: EditableMesh
+	local lo, hi = Vector3.new(math.huge, math.huge, math.huge), Vector3.new(-math.huge, -math.huge, -math.huge)
+	for _, p in g.pos do
+		lo = lo:Min(p)
+		hi = hi:Max(p)
+	end
+	local c = (lo + hi) / 2
+	local vid, nid, cid, uid = table.create(#g.pos), table.create(#g.pos), table.create(#g.pos), table.create(#g.pos)
+	for i, p in g.pos do
+		vid[i] = mesh:AddVertex(p - c)
+		nid[i] = mesh:AddNormal(g.nrm[i])
+		cid[i] = mesh:AddColor(g.col[i], 1)
+		uid[i] = mesh:AddUV(g.uv[i])
+	end
+	for i = 1, #g.tri, 3 do
+		local a, b, d = g.tri[i], g.tri[i + 1], g.tri[i + 2]
+		local f = mesh:AddTriangle(vid[a], vid[b], vid[d])
+		mesh:SetFaceNormals(f, { nid[a], nid[b], nid[d] })
+		mesh:SetFaceColors(f, { cid[a], cid[b], cid[d] })
+		mesh:SetFaceUVs(f, { uid[a], uid[b], uid[d] })
+	end
+	local ok2, part = pcall(function()
+		return AssetService:CreateMeshPartAsync(
+			Content.fromObject(mesh),
+			{ CollisionFidelity = Enum.CollisionFidelity.Box }
+		)
+	end)
+	if not ok2 or part == nil then
+		mesh:Destroy()
+		return nil
+	end
+	local mp = part :: MeshPart
+	mp.Anchored = true
+	mp.CanCollide = false
+	mp.CanQuery = false
+	mp.CanTouch = false
+	mp.Material = material
+	mp.Color = Color3.new(1, 1, 1)
+	mp.CastShadow = shadow
+	mp.CFrame = CFrame.new(origin + c)
+	return mp
+end
+
+-- Build all trees of a chunk into `parent`; yields. Returns the triangle count.
+function Trees.build(chunk: ChunkFormat.Chunk, lod: number, parent: Instance): number
+	local tris = 0
+	local origin = Vector3.new(chunk.ax, chunk.ay, chunk.az)
+	local batch = if lod == 0 then 36 else 400
+	for start = 1, #chunk.trees, batch do
+		local leaves: Geo = { pos = {}, nrm = {}, col = {}, uv = {}, tri = {} }
+		local wood: Geo = { pos = {}, nrm = {}, col = {}, uv = {}, tri = {} }
+		for i = start, math.min(#chunk.trees, start + batch - 1) do
+			tree(leaves, wood, chunk.trees[i], lod)
+		end
+		local lp = toMesh(leaves, Enum.Material.LeafyGrass, origin, true)
+		if lp then
+			lp.Name = "TreeCrowns"
+			lp.Parent = parent
+			tris += #leaves.tri // 3
+		end
+		local wp = toMesh(wood, Enum.Material.Wood, origin, true)
+		if wp then
+			wp.Name = "TreeTrunks"
+			wp.Parent = parent
+			tris += #wood.tri // 3
+		end
+	end
+	return tris
 end
 
 return Trees

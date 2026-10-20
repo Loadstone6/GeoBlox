@@ -5,7 +5,20 @@ on:
   pull_request:
 
 jobs:
-  check:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pipeline dependencies
+        run: pip install -r pipeline/requirements.txt
+      - name: Algorithm tests
+        working-directory: pipeline
+        run: python -m pytest -q tests
+
+  roblox:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,26 +29,23 @@ jobs:
           cd "$HOME/bin"
           get() { curl -sSfL -o t.zip "$1" && unzip -oq t.zip && rm t.zip; }
           get https://github.com/rojo-rbx/rojo/releases/download/v7.4.4/rojo-7.4.4-linux-x86_64.zip
-          get https://github.com/lune-org/lune/releases/download/v0.8.9/lune-0.8.9-linux-x86_64.zip
+          get https://github.com/lune-org/lune/releases/download/v0.10.4/lune-0.10.4-linux-x86_64.zip
           get https://github.com/JohnnyMorganz/StyLua/releases/download/v2.0.2/stylua-linux-x86_64.zip
-          get https://github.com/Kampfkarren/selene/releases/download/0.28.0/selene-0.28.0-linux.zip
-          get https://github.com/JohnnyMorganz/luau-lsp/releases/download/1.53.0/luau-lsp-linux-x86_64.zip
-          curl -sSfL -o globalTypes.d.luau https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/1.53.0/scripts/globalTypes.d.luau
+          get https://github.com/JohnnyMorganz/luau-lsp/releases/download/1.62.0/luau-lsp-linux-x86_64.zip
+          curl -sSfL -o globalTypes.d.luau https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/1.62.0/scripts/globalTypes.d.luau
           chmod +x *
           echo "$HOME/bin" >> "$GITHUB_PATH"
 
       - name: Format
-        run: stylua --check src tests tools
-
-      - name: Lint
-        run: selene src
+        run: stylua --check src/shared src/client src/server src/worker tests
 
       - name: Type check
         run: |
           rojo sourcemap default.project.json -o sourcemap.json
-          luau-lsp analyze --sourcemap=sourcemap.json --definitions="$HOME/bin/globalTypes.d.luau" src
+          luau-lsp analyze --sourcemap=sourcemap.json --definitions="$HOME/bin/globalTypes.d.luau" \
+            --ignore="src/generated/**" --ignore="src/generated_server/**" src
 
-      - name: Tests
+      - name: Decode generated city data
         run: lune run tests/run
 
       - name: Build place
